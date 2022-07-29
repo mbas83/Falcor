@@ -27,9 +27,9 @@
  **************************************************************************/
 #pragma once
 #include "Falcor.h"
-#include "RenderPasses/Shared/VirtualShadowMap/TiledResources/TiledTexture.h"
-#include "RenderPasses/Shared/VirtualShadowMap/TiledResources/FeedbackTexture.h"
-#include "RenderPasses/Shared/VirtualShadowMap/TiledResources/TileUpdateManager.h"
+#include "VirtualShadowMap/TiledResources/TiledTexture.h"
+#include "VirtualShadowMap/TiledResources/FeedbackTexture.h"
+#include "VirtualShadowMap/TiledResources/TileUpdateManager.h"
 
 
 using namespace Falcor;

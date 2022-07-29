@@ -133,6 +133,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 {
     mpScene = pScene;
 
+
     if (mpScene)
     {
         mpProgram->addDefines(pScene->getSceneDefines());

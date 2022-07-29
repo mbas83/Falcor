@@ -28,6 +28,11 @@
 #pragma once
 #include "Falcor.h"
 
+#include "../RenderPasses/ShadowRayCache/VirtualShadowMap/TiledResources/TiledTexture.h"
+#include "../RenderPasses/ShadowRayCache/VirtualShadowMap/TiledResources/FeedbackTexture.h"
+#include "../RenderPasses/ShadowRayCache/VirtualShadowMap/TiledResources/TileUpdateManager.h"
+
+
 using namespace Falcor;
 
 class DeferredRenderer : public RenderPass

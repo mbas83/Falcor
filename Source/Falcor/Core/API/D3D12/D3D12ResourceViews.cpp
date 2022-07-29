@@ -30,7 +30,7 @@
 #include "Core/API/Texture.h"
 #include "Core/API/Buffer.h"
 #include "Core/API/Device.h"
-#include "TiledResources/SamplerFeedbackMap.h"
+#include "RenderPasses/Shared/VirtualShadowMap/TiledResources/SamplerFeedbackMap.h"
 
 namespace Falcor
 {
