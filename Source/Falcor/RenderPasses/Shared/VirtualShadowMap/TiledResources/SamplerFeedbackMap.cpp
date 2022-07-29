@@ -2,7 +2,7 @@
 #include "SamplerFeedbackMap.h"
 
 
-#include "d3dx12.h"
+#include "../Utils/d3dx12.h"
 #include "Core/API/D3D12/FalcorD3D12.h"
 #include "Core/API/Device.h"
 

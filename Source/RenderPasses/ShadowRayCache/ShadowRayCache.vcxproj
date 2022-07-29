@@ -26,22 +26,9 @@
   </ImportGroup>
   <ItemGroup>
     <ClCompile Include="ShadowRayCache.cpp" />
-    <ClCompile Include="TiledResources\FeedbackTexture.cpp" />
-    <ClCompile Include="TiledResources\HeapAllocationManager.cpp" />
-    <ClCompile Include="TiledResources\SamplerFeedbackMap.cpp" />
-    <ClCompile Include="TiledResources\TiledTexture.cpp" />
-    <ClCompile Include="TiledResources\TileUpdateManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ShadowRayCache.h" />
-    <ClInclude Include="TiledResources\d3dx12.h" />
-    <ClInclude Include="TiledResources\FeedbackTexture.h" />
-    <ClInclude Include="TiledResources\HeapAllocationManager.h" />
-    <ClInclude Include="TiledResources\SamplerFeedbackMap.h" />
-    <ClInclude Include="TiledResources\TiledTexture.h" />
-    <ClInclude Include="TiledResources\TileUpdateManager.h" />
-    <ClInclude Include="Utils\MipColorData.h" />
-    <ClInclude Include="Utils\ShaderDefineUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Falcor\Falcor.vcxproj">

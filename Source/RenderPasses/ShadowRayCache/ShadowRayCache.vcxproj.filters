@@ -2,56 +2,9 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="ShadowRayCache.cpp" />
-    <ClCompile Include="TiledResources\FeedbackTexture.cpp">
-      <Filter>TiledResources</Filter>
-    </ClCompile>
-    <ClCompile Include="TiledResources\HeapAllocationManager.cpp">
-      <Filter>TiledResources</Filter>
-    </ClCompile>
-    <ClCompile Include="TiledResources\SamplerFeedbackMap.cpp">
-      <Filter>TiledResources</Filter>
-    </ClCompile>
-    <ClCompile Include="TiledResources\TiledTexture.cpp">
-      <Filter>TiledResources</Filter>
-    </ClCompile>
-    <ClCompile Include="TiledResources\TileUpdateManager.cpp">
-      <Filter>TiledResources</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ShadowRayCache.h" />
-    <ClInclude Include="TiledResources\d3dx12.h">
-      <Filter>TiledResources</Filter>
-    </ClInclude>
-    <ClInclude Include="TiledResources\FeedbackTexture.h">
-      <Filter>TiledResources</Filter>
-    </ClInclude>
-    <ClInclude Include="TiledResources\HeapAllocationManager.h">
-      <Filter>TiledResources</Filter>
-    </ClInclude>
-    <ClInclude Include="TiledResources\SamplerFeedbackMap.h">
-      <Filter>TiledResources</Filter>
-    </ClInclude>
-    <ClInclude Include="TiledResources\TiledTexture.h">
-      <Filter>TiledResources</Filter>
-    </ClInclude>
-    <ClInclude Include="TiledResources\TileUpdateManager.h">
-      <Filter>TiledResources</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\MipColorData.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\ShaderDefineUtils.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Filter Include="Utils">
-      <UniqueIdentifier>{94ceea55-92f0-482c-ae96-3758f3724af4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="TiledResources">
-      <UniqueIdentifier>{c9a69295-d04b-4e54-a90f-ffd54e3be9dc}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ShaderSource Include="Helper.slang" />

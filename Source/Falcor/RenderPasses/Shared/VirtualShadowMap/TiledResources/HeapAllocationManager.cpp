@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "HeapAllocationManager.h"
 
-#include "d3dx12.h"
+#include "../Utils/d3dx12.h"
 
 namespace Falcor {
 

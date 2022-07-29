@@ -3,7 +3,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
-#include "d3dx12.h"
+#include "../Utils/d3dx12.h"
 
 
 namespace Falcor {
