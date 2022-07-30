@@ -107,7 +107,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     mpVars["gWorldNormal"] = renderData[kNormW]->asTexture();
     mpVars["gDiffuse"] = renderData[kDiffuse]->asTexture();
     mpVars["gSpecular"] = renderData[kSpecular]->asTexture();
-    
+
 
     mpVars["PerFrameCB"]["gViewMat"] = mpScene->getCamera()->getViewMatrix();
     mpVars["PerFrameCB"]["gProjMat"] = mpScene->getCamera()->getProjMatrix();
@@ -137,7 +137,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
     if (mpScene)
     {
         mpProgram->addDefines(pScene->getSceneDefines());
-        
+
         const auto numLights = mpScene->getLightCount();
         std::vector<PointLightVertex> pointLights;
         for (const auto& light : mpScene->getLights()) {
@@ -178,6 +178,11 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
         mpDrawBuffer = Buffer::create(sizeof(drawLightPoints[0]) * drawLightPoints.size(), Resource::BindFlags::IndirectArg, Buffer::CpuAccess::None, drawLightPoints.data());
         mpDrawBuffer->setName("Lights Draw Buffer");
+
+        //VSM
+        constexpr uint shadowMapWidth = 16384;
+        constexpr uint shadowMapHeight = 8192;
+
     }
 }
 

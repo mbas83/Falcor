@@ -70,4 +70,18 @@ private:
     Fbo::SharedPtr mpFbo;
     Vao::SharedPtr mpLightsVao;
     Buffer::SharedPtr mpDrawBuffer;
+
+
+    // VSM
+    // reserved shadow map textures
+    std::vector<TiledTexture::SharedPtr> mpShadowMapTextures;
+
+    // feedback textures for shadow maps
+    std::vector<FeedbackTexture::SharedPtr> mpFeedbackTextures;
+
+    // manage tile updates
+    TileUpdateManager::SharedPtr mpTileUpdateManager;
+
+    // color for mip levels
+    Texture::SharedPtr mipColorTex;
 };
