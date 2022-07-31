@@ -2,11 +2,61 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="DeferredRenderer.cpp" />
+    <ClCompile Include="VirtualShadowMap\TiledResources\FeedbackTexture.cpp">
+      <Filter>VirtualShadowMap\TiledResources</Filter>
+    </ClCompile>
+    <ClCompile Include="VirtualShadowMap\TiledResources\HeapAllocationManager.cpp">
+      <Filter>VirtualShadowMap\TiledResources</Filter>
+    </ClCompile>
+    <ClCompile Include="VirtualShadowMap\TiledResources\SamplerFeedbackMap.cpp">
+      <Filter>VirtualShadowMap\TiledResources</Filter>
+    </ClCompile>
+    <ClCompile Include="VirtualShadowMap\TiledResources\TiledTexture.cpp">
+      <Filter>VirtualShadowMap\TiledResources</Filter>
+    </ClCompile>
+    <ClCompile Include="VirtualShadowMap\TiledResources\TileUpdateManager.cpp">
+      <Filter>VirtualShadowMap\TiledResources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DeferredRenderer.h" />
+    <ClInclude Include="VirtualShadowMap\Utils\d3dx12.h">
+      <Filter>VirtualShadowMap\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="VirtualShadowMap\Utils\MipColorData.h">
+      <Filter>VirtualShadowMap\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="VirtualShadowMap\Utils\ShaderDefineUtils.h">
+      <Filter>VirtualShadowMap\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="VirtualShadowMap\TiledResources\FeedbackTexture.h">
+      <Filter>VirtualShadowMap\TiledResources</Filter>
+    </ClInclude>
+    <ClInclude Include="VirtualShadowMap\TiledResources\HeapAllocationManager.h">
+      <Filter>VirtualShadowMap\TiledResources</Filter>
+    </ClInclude>
+    <ClInclude Include="VirtualShadowMap\TiledResources\SamplerFeedbackMap.h">
+      <Filter>VirtualShadowMap\TiledResources</Filter>
+    </ClInclude>
+    <ClInclude Include="VirtualShadowMap\TiledResources\TiledTexture.h">
+      <Filter>VirtualShadowMap\TiledResources</Filter>
+    </ClInclude>
+    <ClInclude Include="VirtualShadowMap\TiledResources\TileUpdateManager.h">
+      <Filter>VirtualShadowMap\TiledResources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ShaderSource Include="DeferredRenderer.3d.slang" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="VirtualShadowMap">
+      <UniqueIdentifier>{75f35386-1018-4e45-9bbc-da61cd40f1d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="VirtualShadowMap\TiledResources">
+      <UniqueIdentifier>{eee11e8b-37cf-4d57-8779-76313e2a8867}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="VirtualShadowMap\Utils">
+      <UniqueIdentifier>{a81bc1dc-8918-4b8b-98c5-c8f1c5c4c9cc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

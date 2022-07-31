@@ -26,9 +26,22 @@
   </ImportGroup>
   <ItemGroup>
     <ClCompile Include="DeferredRenderer.cpp" />
+    <ClCompile Include="VirtualShadowMap\TiledResources\FeedbackTexture.cpp" />
+    <ClCompile Include="VirtualShadowMap\TiledResources\HeapAllocationManager.cpp" />
+    <ClCompile Include="VirtualShadowMap\TiledResources\SamplerFeedbackMap.cpp" />
+    <ClCompile Include="VirtualShadowMap\TiledResources\TiledTexture.cpp" />
+    <ClCompile Include="VirtualShadowMap\TiledResources\TileUpdateManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DeferredRenderer.h" />
+    <ClInclude Include="VirtualShadowMap\TiledResources\FeedbackTexture.h" />
+    <ClInclude Include="VirtualShadowMap\TiledResources\HeapAllocationManager.h" />
+    <ClInclude Include="VirtualShadowMap\TiledResources\SamplerFeedbackMap.h" />
+    <ClInclude Include="VirtualShadowMap\TiledResources\TiledTexture.h" />
+    <ClInclude Include="VirtualShadowMap\TiledResources\TileUpdateManager.h" />
+    <ClInclude Include="VirtualShadowMap\Utils\d3dx12.h" />
+    <ClInclude Include="VirtualShadowMap\Utils\MipColorData.h" />
+    <ClInclude Include="VirtualShadowMap\Utils\ShaderDefineUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Falcor\Falcor.vcxproj">

@@ -29,7 +29,7 @@ namespace Falcor {
                 // heap tile already in use, check next
                 currentHeapIndex++;
 
-                assert(currentHeapIndex < mHeapSize);
+                FALCOR_ASSERT(currentHeapIndex < mHeapSize);
             }
             else
             {

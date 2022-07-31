@@ -10,8 +10,8 @@ namespace Falcor
 {
     SamplerFeedbackMap::SharedPtr SamplerFeedbackMap::create2DFeedbackMap(TiledTexture::SharedConstPtr tiledTex)
     {
-        assert(tiledTex);
-        assert(tiledTex->getType() == Type::Texture2D);
+        FALCOR_ASSERT(tiledTex);
+        FALCOR_ASSERT(tiledTex->getType() == Type::Texture2D);
         SamplerFeedbackMap::SharedPtr feedbackMap = SharedPtr(new SamplerFeedbackMap(tiledTex->getWidth(),
             tiledTex->getHeight(), tiledTex->getFormat(), tiledTex->getArraySize(), tiledTex->getMipCount(), tiledTex->getType(), tiledTex->getBindFlags()));
         feedbackMap->init(tiledTex);

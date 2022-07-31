@@ -50,13 +50,15 @@ namespace
     const std::string kNormW = "normW";
     const std::string kDiffuse = "diffuse";
     const std::string kSpecular = "specular";
+    const std::string kTexGrad = "texGrad";
 
     const Falcor::ChannelList kInputChannels =
     {
         { kPosW,        "gWorldPos",         "position in world space" },
         { kNormW,  "gWorldNormal",   "normal in world space" },
         { kDiffuse,        "gDiffuse",           "diffuse color" },
-        { kSpecular,    "gSpecular",     "specular color" }
+        { kSpecular,    "gSpecular",     "specular color" },
+        { kTexGrad,    "gTexGrads",     "Texture gradients (ddx, ddy)" }
     };
 
 
@@ -107,6 +109,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     mpVars["gWorldNormal"] = renderData[kNormW]->asTexture();
     mpVars["gDiffuse"] = renderData[kDiffuse]->asTexture();
     mpVars["gSpecular"] = renderData[kSpecular]->asTexture();
+    mpVars["gTexGrad"] = renderData[kTexGrad]->asTexture();
 
 
     mpVars["PerFrameCB"]["gViewMat"] = mpScene->getCamera()->getViewMatrix();
@@ -182,7 +185,9 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         //VSM
         constexpr uint shadowMapWidth = 16384;
         constexpr uint shadowMapHeight = 8192;
-
+        
+        auto test = TiledTexture::create2DTiled(shadowMapWidth,shadowMapHeight,ResourceFormat::R32Float);
+        mpShadowMapTextures.emplace_back(test);
     }
 }
 

@@ -4,11 +4,11 @@
 
 
 // light i -> gShadowMap'i'_'mipindex'
-static std::string getMipViewDefineString(const uint lightIndex, const uint mipCount)
+static std::string getMipViewDefineString(const uint32_t lightIndex, const uint32_t mipCount)
 {
     std::string s;
-
-    for (uint i = 0; i < mipCount; ++i)
+    
+    for (uint32_t i = 0; i < mipCount; ++i)
     {
         s += "RWTexture2D<float> gShadowMap" + std::to_string(lightIndex) + "_" + std::to_string(i) + ";";
     }
@@ -17,11 +17,11 @@ static std::string getMipViewDefineString(const uint lightIndex, const uint mipC
 }
 
 
-static std::string mipDimensionsFunctionString(const uint mipCount)
+static std::string mipDimensionsFunctionString(const uint32_t mipCount)
 {
     std::string s("uint2 getMipDimensions(int mipLevel){uint2 resolution; switch(mipLevel){");
 
-    for (uint i = 0; i < mipCount; ++i)
+    for (uint32_t i = 0; i < mipCount; ++i)
     {
         // switch case for every mip level view
         s += "case " + std::to_string(i) + ": gShadowMap0_" + std::to_string(i) + +".GetDimensions(resolution.x,resolution.y); break;";
@@ -34,11 +34,11 @@ static std::string mipDimensionsFunctionString(const uint mipCount)
 
 
 // light i -> writeDepth'i'()
-static std::string getWriteToMipFunctionString(const uint lightIndex, const uint mipCount)
+static std::string getWriteToMipFunctionString(const uint32_t lightIndex, const uint32_t mipCount)
 {
     std::string s("void writeDepth" + std::to_string(lightIndex) + "(int mipLevel, uint2 coords, float value){switch(mipLevel){");
 
-    for (uint i = 0; i < mipCount; ++i)
+    for (uint32_t i = 0; i < mipCount; ++i)
     {
         // switch case for every mip level view
         s += "case " + std::to_string(i) + ": gShadowMap" + std::to_string(lightIndex) + "_" + std::to_string(i) + "[coords] = value; break;";
@@ -51,11 +51,11 @@ static std::string getWriteToMipFunctionString(const uint lightIndex, const uint
 
 
 // light i -> readDepth'i'()
-static std::string getReadFromMipFunctionString(const uint lightIndex, const uint mipCount)
+static std::string getReadFromMipFunctionString(const uint32_t lightIndex, const uint32_t mipCount)
 {
     std::string s("float readDepth" + std::to_string(lightIndex) + "(int mipLevel, uint2 coords){switch(mipLevel){");
 
-    for (uint i = 0; i < mipCount; ++i)
+    for (uint32_t i = 0; i < mipCount; ++i)
     {
         // switch case for every mip level view
         s += "case " + std::to_string(i) + ": return gShadowMap" + std::to_string(lightIndex) + "_" + std::to_string(i) + "[coords];";
@@ -68,13 +68,13 @@ static std::string getReadFromMipFunctionString(const uint lightIndex, const uin
 
 
 // light i -> gFeedbackMip'i'_'mipIndex'
-static std::string getFeedbackViewDefineString(const uint lightIndex, const uint standardMipCount)
+static std::string getFeedbackViewDefineString(const uint32_t lightIndex, const uint32_t standardMipCount)
 {
     // only the normal (not packed) mips are used for feedback
     // RWTexture2D<uint> gFeedbackMip(i);
     std::string s;
 
-    for (uint i = 0; i < standardMipCount; ++i)
+    for (uint32_t i = 0; i < standardMipCount; ++i)
     {
         s += "RWTexture2D<uint> gFeedbackMip" + std::to_string(lightIndex) + "_" + std::to_string(i) + ";";
     }
@@ -83,7 +83,7 @@ static std::string getFeedbackViewDefineString(const uint lightIndex, const uint
 }
 
 
-static std::string getWriteFeedbackString(const uint lightIndex, const uint standardMipCount)
+static std::string getWriteFeedbackString(const uint32_t lightIndex, const uint32_t standardMipCount)
 {
 
 
@@ -109,7 +109,7 @@ static std::string getWriteFeedbackString(const uint lightIndex, const uint stan
      // only the normal (not packed) mips are used for feedback
     std::string s("void writeFeedback" + std::to_string(lightIndex) + "(int mipLevel, uint2 coordinate){ uint2 feedback_coord = uint2(coordinate / uint2(TILE_WIDTH, TILE_HEIGHT)); switch(mipLevel){");
 
-    for (uint i = 0; i < standardMipCount; ++i)
+    for (uint32_t i = 0; i < standardMipCount; ++i)
     {
         // switch case for every mip level view
         s += "case " + std::to_string(i) + ": gFeedbackMip" + std::to_string(lightIndex) + "_" + std::to_string(i) + "[feedback_coord] = 0xFF;break;";
@@ -120,7 +120,7 @@ static std::string getWriteFeedbackString(const uint lightIndex, const uint stan
     return s;
 }
 
-static std::string getLightCalculationString(const uint numLights)
+static std::string getLightCalculationString(const uint32_t numLights)
 {
     /*
     //Get resolution of mip 0 for LOD calculation
@@ -256,7 +256,7 @@ static std::string getLightCalculationString(const uint numLights)
         "outColor += shadowFactor * (bsdfProperties.diffuseReflectionAlbedo + (pow(NdotL, shininess) * bsdfProperties.specularReflectionAlbedo)) * M_1_PI * lightIntensity;"
         "writeFeedback" + std::to_string(0) + "(mipLevel,shadowMapCoord);");
 
-    for (uint i = 1; i < numLights; ++i)
+    for (uint32_t i = 1; i < numLights; ++i)
     {
         s+= "resolution = getMipDimensions(0);"
         " hitPointDx1 = shadeData.posW  + newRayDiff.getdOdx() / 2;  hitPointDx2 = shadeData.posW  - newRayDiff.getdOdx() / 2; \n"

@@ -28,8 +28,8 @@
 #include "ShadowRayCache.h"
 
 #include "RenderGraph/RenderPassHelpers.h"
-#include "VirtualShadowMap/Utils/ShaderDefineUtils.h"
-#include "VirtualShadowMap/Utils/MipColorData.h"
+#include "RenderPasses/Shared/VirtualShadowMap/Utils/ShaderDefineUtils.h"
+#include "RenderPasses/Shared/VirtualShadowMap/Utils/MipColorData.h"
 
 const RenderPass::Info ShadowRayCache::kInfo{ "ShadowRayCache", "Shadow Ray Caching" };
 

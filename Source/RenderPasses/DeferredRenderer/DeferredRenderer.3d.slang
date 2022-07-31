@@ -1,4 +1,7 @@
 
+import Scene.RaytracingInline;
+import Utils.Math.Ray;
+
 cbuffer PerFrameCB
 {
     float4x4 gViewMat;
@@ -115,6 +118,7 @@ Texture2D<float4> gWorldPos;
 Texture2D<float4> gWorldNormal;
 Texture2D<float4> gDiffuse;
 Texture2D<float4> gSpecular;
+Texture2D<float4> gTexGrad;
 
 float4 psMain(GsOut gsOut) : SV_TARGET0
 {
@@ -141,6 +145,30 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     float3 lightColor = max(dot(direction, normal), 0.0) * gsOut.color * attenuation;
 
     out_color = float4(lightColor * (diffuseColor + specularColor), 1);
+
+    // calc shadow
+    //const float4 texGrads = float4(ddx(sd.uv), ddy(sd.uv));
+    const float2 ddx = gTexGrad[pixelCoord].xy;
+    const float2 ddy = gTexGrad[pixelCoord].zw;
+
+    // create shadow depth ray from light pos to fragment world pos
+    //const Ray ray = gGBufferRT.generateRay(pixel);
+
+    SceneRayQuery<0> sceneRayQuery;
+    HitInfo hit;
+    float hitT;
+    float depth;
+    if (sceneRayQuery.traceRay(ray, hit, hitT, GBufferRT::kRayFlags, 0xff))
+    {
+        //
+        depth = hitT;
+    }
+    else
+    {
+        depth = float(1e+38f);
+    }
+
+
 
     return out_color;
 }

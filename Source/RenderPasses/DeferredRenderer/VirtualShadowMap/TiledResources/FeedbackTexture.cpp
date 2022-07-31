@@ -53,7 +53,7 @@ namespace Falcor
         D3D12_HEAP_FLAGS heapFlags = is_set(mBindFlags, ResourceBindFlags::Shared) ? D3D12_HEAP_FLAG_SHARED : D3D12_HEAP_FLAG_NONE;
         FALCOR_D3D_CALL(gpDevice->getApiHandle()->CreateCommittedResource(&heapProperties, heapFlags, &desc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&mApiHandle)));
 
-        assert(mApiHandle);
+        FALCOR_ASSERT(mApiHandle);
         mApiHandle->SetName(L"FeedbackTexture");
     }
 
