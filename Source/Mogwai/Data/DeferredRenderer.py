@@ -6,7 +6,6 @@ def render_graph_DefaultRenderGraph():
     loadRenderPassLibrary('BSDFViewer.dll')
     loadRenderPassLibrary('DeferredRenderer.dll')
     loadRenderPassLibrary('Antialiasing.dll')
-    loadRenderPassLibrary('ShadowRayCache.dll')
     loadRenderPassLibrary('BlitPass.dll')
     loadRenderPassLibrary('CSM.dll')
     loadRenderPassLibrary('DebugPasses.dll')
@@ -46,6 +45,7 @@ def render_graph_DefaultRenderGraph():
     g.addEdge('GBufferRaster.normW', 'DeferredRenderer.normW')
     g.addEdge('GBufferRaster.diffuseOpacity', 'DeferredRenderer.diffuse')
     g.addEdge('GBufferRaster.specRough', 'DeferredRenderer.specular')
+    g.addEdge('GBufferRaster.texGrads', 'DeferredRenderer.texGrad')
     g.markOutput('DeferredRenderer.outColor')
     return g
 

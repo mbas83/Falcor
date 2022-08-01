@@ -120,6 +120,8 @@ Texture2D<float4> gDiffuse;
 Texture2D<float4> gSpecular;
 Texture2D<float4> gTexGrad;
 
+RWTexture2D<float4> gDebug;
+
 float4 psMain(GsOut gsOut) : SV_TARGET0
 {
     float4 out_color;
@@ -130,8 +132,9 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     float3 specularColor = gSpecular[pixelCoord].rgb;
     float3 worldPos = gWorldPos[pixelCoord].xyz;
     float3 normal = normalize(gWorldNormal[pixelCoord].xyz);
+    float3 lightPos = gsOut.posW;
 
-    float3 direction = gsOut.posW - worldPos;
+    float3 direction = lightPos - worldPos;
     float dist = length(direction);
    
     if (dist >= gsOut.radius) discard; // skip lights that are too far away
@@ -152,23 +155,44 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     const float2 ddy = gTexGrad[pixelCoord].zw;
 
     // create shadow depth ray from light pos to fragment world pos
-    //const Ray ray = gGBufferRT.generateRay(pixel);
+    // Ray(origin,  dir,  tMin = 0.f, float tMax = FLT_MAX)
+
+    float3 origin = worldPos;
+    float3 dir = normalize(worldPos - lightPos);
+    Ray ray = Ray(origin, dir);
+
 
     SceneRayQuery<0> sceneRayQuery;
     HitInfo hit;
     float hitT;
-    float depth;
-    if (sceneRayQuery.traceRay(ray, hit, hitT, GBufferRT::kRayFlags, 0xff))
+    float closestDepth = 0.f;
+    uint flags = RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES;
+
+    float debug = 0.f;
+
+    if (sceneRayQuery.traceRay(ray, hit, hitT, flags, 0xff))
     {
-        //
-        depth = hitT;
+        debug = 1.f;
+        // hitT == depth from light
+        closestDepth = hitT;
     }
     else
     {
-        depth = float(1e+38f);
+        closestDepth = float(1e+38f);
     }
 
+    float shadowFactor = 1.0f;
+    float bias = max(0.1f * (1.0f - dot(normal, dir)), 0.01f);
+    bias = 0.f;
+    float currentDepth = dist;
+    if(currentDepth - bias > closestDepth){
+        shadowFactor = 0.0f;
+    }
 
+    out_color *= shadowFactor;
+
+
+    gDebug[pixelCoord] = float4(debug, 0.f, 0.f, 1.f);
 
     return out_color;
 }

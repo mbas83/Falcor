@@ -45,12 +45,15 @@ extern "C" FALCOR_API_EXPORT void getPasses(Falcor::RenderPassLibrary & lib)
 namespace
 {
     const char kShaderFile[] = "RenderPasses/DeferredRenderer/DeferredRenderer.3d.slang";
+    const char kShaderModel[] = "6_5";
 
     const std::string kPosW = "posW";
     const std::string kNormW = "normW";
     const std::string kDiffuse = "diffuse";
     const std::string kSpecular = "specular";
     const std::string kTexGrad = "texGrad";
+
+    const std::string kDebug = "debug";
 
     const Falcor::ChannelList kInputChannels =
     {
@@ -92,6 +95,7 @@ RenderPassReflection DeferredRenderer::reflect(const CompileData& compileData)
     addRenderPassInputs(reflector, kInputChannels);
 
     reflector.addOutput(kOut, "Final color of deferred renderer");
+    reflector.addOutput(kDebug, "debug tex").format(ResourceFormat::RGBA32Float);
     return reflector;
 }
 
@@ -105,12 +109,15 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
 
     if (!mpScene) return;
 
+    // GBuffer Input
     mpVars["gWorldPos"] = renderData[kPosW]->asTexture();
     mpVars["gWorldNormal"] = renderData[kNormW]->asTexture();
     mpVars["gDiffuse"] = renderData[kDiffuse]->asTexture();
     mpVars["gSpecular"] = renderData[kSpecular]->asTexture();
     mpVars["gTexGrad"] = renderData[kTexGrad]->asTexture();
 
+    //Output
+    mpVars["gDebug"] = renderData[kDebug]->asTexture();
 
     mpVars["PerFrameCB"]["gViewMat"] = mpScene->getCamera()->getViewMatrix();
     mpVars["PerFrameCB"]["gProjMat"] = mpScene->getCamera()->getProjMatrix();
@@ -139,7 +146,19 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
     if (mpScene)
     {
-        mpProgram->addDefines(pScene->getSceneDefines());
+        // create Program
+        Program::Desc desc;
+        Shader::DefineList defines;
+        desc.addShaderLibrary(kShaderFile).vsEntry("vsMain").gsEntry("gsMain").psEntry("psMain");
+        desc.addTypeConformances(mpScene->getTypeConformances());
+        desc.setShaderModel(kShaderModel);
+
+        defines.add(pScene->getSceneDefines());
+
+        mpProgram = GraphicsProgram::create(desc, defines);
+        mpState->setProgram(mpProgram);
+
+        mpVars = GraphicsVars::create(mpProgram->getReflector());
 
         const auto numLights = mpScene->getLightCount();
         std::vector<PointLightVertex> pointLights;
@@ -185,19 +204,15 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         //VSM
         constexpr uint shadowMapWidth = 16384;
         constexpr uint shadowMapHeight = 8192;
-        
-        auto test = TiledTexture::create2DTiled(shadowMapWidth,shadowMapHeight,ResourceFormat::R32Float);
+
+        auto test = TiledTexture::create2DTiled(shadowMapWidth, shadowMapHeight, ResourceFormat::R32Float);
         mpShadowMapTextures.emplace_back(test);
     }
 }
 
 DeferredRenderer::DeferredRenderer() : RenderPass(kInfo)
 {
-    Program::Desc desc;
-    desc.addShaderLibrary(kShaderFile).vsEntry("vsMain").gsEntry("gsMain").psEntry("psMain");
-    mpProgram = GraphicsProgram::create(desc);
     mpState = GraphicsState::create();
-    mpVars = GraphicsVars::create(mpProgram->getReflector());
 
     // Create the rasterizer state
     RasterizerState::Desc rastDesc;
@@ -219,7 +234,6 @@ DeferredRenderer::DeferredRenderer() : RenderPass(kInfo)
         BlendState::BlendFunc::One);
     mpState->setBlendState(BlendState::create(blendDesc));
 
-    mpState->setProgram(mpProgram);
 
     mpFbo = Fbo::create();
 }
