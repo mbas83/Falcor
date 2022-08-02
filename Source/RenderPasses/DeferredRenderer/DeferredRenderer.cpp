@@ -127,9 +127,14 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
 
 
     //mpScene->rasterize(pRenderContext, mpState.get(), mpVars.get(), mpRsState, mpRsState);
-
-    mpState->setRasterizerState(mpRsState);
+    
+    
+    FALCOR_PROFILE("rasterizeScene");
+    
     mpState->setVao(mpLightsVao);
+    mpState->setRasterizerState(mpRsState);
+    mpScene->setRaytracingShaderData(pRenderContext, mpVars->getRootVar());
+    mpVars->setParameterBlock("gScene", mpScene->getParameterBlock());
 
     pRenderContext->drawIndirect(mpState.get(), mpVars.get(), 1, mpDrawBuffer.get(), 0, nullptr, 0);
 

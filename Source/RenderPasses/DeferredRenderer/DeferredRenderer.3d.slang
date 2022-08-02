@@ -157,7 +157,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     // create shadow depth ray from light pos to fragment world pos
     // Ray(origin,  dir,  tMin = 0.f, float tMax = FLT_MAX)
 
-    float3 origin = worldPos;
+    float3 origin = lightPos;
     float3 dir = normalize(worldPos - lightPos);
     Ray ray = Ray(origin, dir);
 
@@ -189,7 +189,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
         shadowFactor = 0.0f;
     }
 
-    out_color *= shadowFactor;
+    //out_color *= shadowFactor;
 
 
     gDebug[pixelCoord] = float4(debug, 0.f, 0.f, 1.f);
