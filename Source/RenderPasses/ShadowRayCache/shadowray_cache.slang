@@ -48,10 +48,7 @@ struct PrimaryRayPayload {
 
 // payload for radus search
 struct RadiusSearchPayload {
-    RayDiff rayDiff;
-    ShadingData shadeData;
-    float3 color;
-    ITextureSampler hitLod;
+
 };
 
 
@@ -194,7 +191,86 @@ void PrimaryClosestHit(inout PrimaryRayPayload rayData: SV_RayPayload, BuiltInTr
 
     #else // iterate over all lights
 
-    SUM_LIGHT_FUNCTION
+    uint2 resolution;
+    resolution = getMipDimensions(0);
+
+    // calc the two positions at hit point
+    float3 hitPointDx1 = shadeData.posW  + newRayDiff.getdOdx() / 2;
+    float3 hitPointDx2 = shadeData.posW  - newRayDiff.getdOdx() / 2;
+    // for dy
+    float3 hitPointDy1 = shadeData.posW  + newRayDiff.getdOdy() / 2;
+    float3 hitPointDy2 = shadeData.posW  - newRayDiff.getdOdy() / 2;
+
+    float3 outColor= float3(0.f);
+
+    for(int lightIndex = 0; lightIndex < gScene.getLightCount(); lightIndex++){
+
+    //Get Light data
+    LightData lightData =  gScene.getLight(lightIndex);
+    AnalyticLightSample ls;
+    samplePointLight(shadeData.posW, lightData, ls);
+    float3 toLight = ls.dir;
+    float3 toHitPos = -toLight;
+    float3 lightIntensity = ls.Li;
+
+     // direction from light to hitpos
+    float3 lightPos = lightData.posW;
+    float2 shadowCoordsDx1 = world_to_latlong_map(normalize(hitPointDx1 - lightPos)) * resolution;
+    float2 shadowCoordsDx2 = world_to_latlong_map(normalize(hitPointDx2 - lightPos)) * resolution;
+    // for dy
+    float2 shadowCoordsDy1 = world_to_latlong_map(normalize(hitPointDy1 - lightPos)) * resolution;
+    float2 shadowCoordsDy2 = world_to_latlong_map(normalize(hitPointDy2 - lightPos)) * resolution;
+
+    float2 ShadowCoordDx = abs(shadowCoordsDx1 - shadowCoordsDx2);
+    float2 ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2);
+
+    float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,MIPCOUNT);
+
+    // Update Resolution to chosen mipmap level
+    resolution = getMipDimensions(int(mipLevel));
+    float2 shadowMapCoord = world_to_latlong_map(toHitPos) * resolution;
+    // ray should always go through center of the shadow map pixel
+    float3 pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);
+
+    float bias = max(gDepthBias * (1.0 - dot(shadeData.N, pixel_centered_dir)), 0.01);
+
+    float shadowFactor = 1.0f;
+    float closestDepth = readFromMip(lightIndex, int(mipLevel), shadowMapCoord);
+
+    if(closestDepth > 0.0f)
+    {
+        float currentDepth =  ls.distance;
+        if(currentDepth - bias > closestDepth){
+            shadowFactor = 0.0f;
+        }
+    }
+    else
+    {
+        // Shoot ray from light to hitpos direction
+        float closestDepth = depthRay(lightData.posW, pixel_centered_dir, 0, 1e+38f);
+
+        // save to texture
+        writeDepth(lightIndex, int(mipLevel), shadowMapCoord, closestDepth);
+
+
+        float currentDepth =  ls.distance;
+        if(currentDepth - bias > closestDepth){
+            shadowFactor = 0.0f;
+        }
+    }
+
+    // Compute our lambertian term (L dot N)
+    float NdotL = saturate(dot(shadeData.N, toLight));
+
+    // Create BSDF instance and query its properties.
+    let bsdf = gScene.materials.getBSDF(shadeData, lod);
+    let bsdfProperties = bsdf.getProperties(shadeData);
+
+    // Phong shading
+    float shininess = 10.0;
+    outColor += shadowFactor * (bsdfProperties.diffuseReflectionAlbedo + (pow(NdotL, shininess) * bsdfProperties.specularReflectionAlbedo)) * M_1_PI * lightIntensity;
+
+    writeFeedback(lightIndex, mipLevel, shadowMapCoord)
 
     #endif
 
@@ -294,66 +370,7 @@ void boxIntersect()
 [shader("anyhit")]
 void boxAnyHit(inout RadiusSearchPayload rayData : SV_RayPayload, BoxIntersectionAttributes attribs : SV_IntersectionAttributes)
 {
-    ShadingData shadeData = rayData.shadeData;
-    RayDiff raydiff = rayData.rayDiff;
-
-    float3 hitPointDx1 = shadeData.posW  + raydiff.getdOdx() / 2; float3 hitPointDx2 = shadeData.posW  - raydiff.getdOdx() / 2;
-    float3 hitPointDy1 = shadeData.posW  + raydiff.getdOdy() / 2; float3 hitPointDy2 = shadeData.posW  - raydiff.getdOdy() / 2;
-
-    int lightIndex = attribs.aabbOffset;
-    LightData lightData =  gScene.getLight(lightIndex);
-    AnalyticLightSample ls;
-    samplePointLight(shadeData.posW, lightData, ls);
-    float3 toLight = ls.dir;
-    float3 toHitPos = -toLight;
-    float3 lightIntensity = ls.Li;
-    float3 lightPos = lightData.posW;
-
-    uint2 resolution;
-    resolution = getMipDimensions(0);
-    float2 shadowCoordsDx1 = world_to_latlong_map(normalize(hitPointDx1 - lightPos)) * resolution;
-    float2 shadowCoordsDx2 = world_to_latlong_map(normalize(hitPointDx2 - lightPos)) * resolution;
-    float2 shadowCoordsDy1 = world_to_latlong_map(normalize(hitPointDy1 - lightPos)) * resolution;
-    float2 shadowCoordsDy2 = world_to_latlong_map(normalize(hitPointDy2 - lightPos)) * resolution;
-
-    float2 ShadowCoordDx = abs(shadowCoordsDx1 - shadowCoordsDx2);
-    float2 ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2);
-    float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,MIPCOUNT);
-    resolution = getMipDimensions(int(mipLevel));
-    float2 shadowMapCoord = world_to_latlong_map(toHitPos) * resolution;
-    float3 pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);
-
-    float bias = max(gDepthBias * (1.0 - dot(shadeData.N, pixel_centered_dir)), 0.01); 
-    float shadowFactor = 1.0f;
-
-    //float closestDepth = readDepth" + std::to_string(0) + "(int(mipLevel),shadowMapCoord);
-    float closestDepth = 0.f;
-    if(closestDepth > 0.0f)
-    {
-     float currentDepth =  ls.distance; 
-       if(currentDepth - bias > closestDepth){
-        shadowFactor = 0.0f;
-       }
-     }
-     else
-     {
-       float closestDepth = depthRay(lightData.posW, pixel_centered_dir, 0, 1e+38f);
-       //writeDepth" + std::to_string(0) + "(int(mipLevel), shadowMapCoord, closestDepth);
-       float currentDepth =  ls.distance;
-       if(currentDepth - bias > closestDepth){
-         shadowFactor = 0.0f;
-       }
-     }
-     float NdotL = saturate(dot(shadeData.N, toLight));
-     IBSDF bsdf = gScene.materials.getBSDF(shadeData, rayData.hitLod);
-     BSDFProperties bsdfProperties = bsdf.getProperties(shadeData);
-     float shininess = 10.0;
-     rayData.color += shadowFactor * (bsdfProperties.diffuseReflectionAlbedo + (pow(NdotL, shininess) * bsdfProperties.specularReflectionAlbedo)) * M_1_PI * lightIntensity;
-
-
-     //writeFeedback(mipLevel,shadowMapCoord);
-
-
+    
 }
 
 

@@ -83,4 +83,7 @@ private:
 
     // color for mip levels
     Texture::SharedPtr mipColorTex;
+
+    // shadow mapping bias 
+    float mDepthBias;
 };

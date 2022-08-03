@@ -4,13 +4,16 @@
 
 
 // light i -> gShadowMap'i'_'mipindex'
-static std::string getMipViewDefineString(const uint32_t lightIndex, const uint32_t mipCount)
+static std::string getMipViewDefineString(const uint32_t lightCount, const uint32_t mipCount)
 {
     std::string s;
-    
-    for (uint32_t i = 0; i < mipCount; ++i)
+
+    for (uint32_t lightIndex = 0; lightIndex < lightCount; ++lightIndex)
     {
-        s += "RWTexture2D<float> gShadowMap" + std::to_string(lightIndex) + "_" + std::to_string(i) + ";";
+        for (uint32_t mipIndex = 0; mipIndex < mipCount; ++mipIndex)
+        {
+            s += "RWTexture2D<float> gShadowMap" + std::to_string(lightIndex) + "_" + std::to_string(mipIndex) + ";";
+        }
     }
 
     return s;
@@ -33,15 +36,15 @@ static std::string mipDimensionsFunctionString(const uint32_t mipCount)
 }
 
 
-// light i -> writeDepth'i'()
-static std::string getWriteToMipFunctionString(const uint32_t lightIndex, const uint32_t mipCount)
+// light i -> writeDepth'i'() TODO: case for every light mip combination
+static std::string getWriteToMipFunctionString(const uint32_t lightCount, const uint32_t mipCount)
 {
-    std::string s("void writeDepth" + std::to_string(lightIndex) + "(int mipLevel, uint2 coords, float value){switch(mipLevel){");
+    std::string s("void writeDepth(uint lightIndex, int mipLevel, uint2 coords, float value){switch(mipLevel){");
 
     for (uint32_t i = 0; i < mipCount; ++i)
     {
         // switch case for every mip level view
-        s += "case " + std::to_string(i) + ": gShadowMap" + std::to_string(lightIndex) + "_" + std::to_string(i) + "[coords] = value; break;";
+        s += "case " + std::to_string(i) + ": gShadowMap" + std::to_string(lightCount) + "_" + std::to_string(i) + "[coords] = value; break;";
     }
 
     s += "default: break; } }";
@@ -50,7 +53,7 @@ static std::string getWriteToMipFunctionString(const uint32_t lightIndex, const 
 }
 
 
-// light i -> readDepth'i'()
+// light i -> readDepth'i'() TODO: update to lightIndex parameter
 static std::string getReadFromMipFunctionString(const uint32_t lightIndex, const uint32_t mipCount)
 {
     std::string s("float readDepth" + std::to_string(lightIndex) + "(int mipLevel, uint2 coords){switch(mipLevel){");
@@ -67,7 +70,7 @@ static std::string getReadFromMipFunctionString(const uint32_t lightIndex, const
 }
 
 
-// light i -> gFeedbackMip'i'_'mipIndex'
+// light i -> gFeedbackMip'i'_'mipIndex' TODO: change to lightIndex parameter
 static std::string getFeedbackViewDefineString(const uint32_t lightIndex, const uint32_t standardMipCount)
 {
     // only the normal (not packed) mips are used for feedback
@@ -82,7 +85,7 @@ static std::string getFeedbackViewDefineString(const uint32_t lightIndex, const 
     return s;
 }
 
-
+// TODO: change to lightindex parameter
 static std::string getWriteFeedbackString(const uint32_t lightIndex, const uint32_t standardMipCount)
 {
 
@@ -258,50 +261,50 @@ static std::string getLightCalculationString(const uint32_t numLights)
 
     for (uint32_t i = 1; i < numLights; ++i)
     {
-        s+= "resolution = getMipDimensions(0);"
-        " hitPointDx1 = shadeData.posW  + newRayDiff.getdOdx() / 2;  hitPointDx2 = shadeData.posW  - newRayDiff.getdOdx() / 2; \n"
-        " hitPointDy1 = shadeData.posW  + newRayDiff.getdOdy() / 2;  hitPointDy2 = shadeData.posW  - newRayDiff.getdOdy() / 2; \n"
-        " lightData =  gScene.getLight(" + std::to_string(i) + ");"
-        "samplePointLight(shadeData.posW, lightData, ls);"
-        " toLight = ls.dir;"
-        " toHitPos = -toLight;"
-        " lightIntensity = ls.Li;"
-        " lightPos = lightData.posW; \n"
-        " shadowCoordsDx1 = world_to_latlong_map(normalize(hitPointDx1 - lightPos)) * resolution;"
-        " shadowCoordsDx2 = world_to_latlong_map(normalize(hitPointDx2 - lightPos)) * resolution;"
-        " shadowCoordsDy1 = world_to_latlong_map(normalize(hitPointDy1 - lightPos)) * resolution;"
-        " shadowCoordsDy2 = world_to_latlong_map(normalize(hitPointDy2 - lightPos)) * resolution; \n"
-        " ShadowCoordDx = abs(shadowCoordsDx1 - shadowCoordsDx2);"
-        " ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2); \n"
-        " mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,MIPCOUNT); \n"
-        "resolution = getMipDimensions(int(mipLevel));"
-        " shadowMapCoord = world_to_latlong_map(toHitPos) * resolution;"
-        " pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);"
-        " bias = max(gDepthBias * (1.0 - dot(shadeData.N, pixel_centered_dir)), 0.01); \n"
-        " shadowFactor = 1.0f;"
-        " closestDepth = readDepth" + std::to_string(i) + "(int(mipLevel),shadowMapCoord);\n"
-        "if(closestDepth > 0.0f)"
-        "{"
-        "  float currentDepth =  ls.distance; "
-        "if(currentDepth - bias > closestDepth){"
-        "   shadowFactor = 0.0f;"
-        "}"
-        "} \n"
-        "else"
-        "{"
-        "  float closestDepth = depthRay(lightData.posW, pixel_centered_dir, 0, 1e+38f);"
-        "writeDepth" + std::to_string(i) + "(int(mipLevel), shadowMapCoord, closestDepth);\n"
-        "float currentDepth =  ls.distance;"
-        "if(currentDepth - bias > closestDepth){"
-        "    shadowFactor = 0.0f;"
-        "}"
-        "} \n"
-        " NdotL = saturate(dot(shadeData.N, toLight));"
-        "bsdf = gScene.materials.getBSDF(shadeData, lod);"
-        "bsdfProperties = bsdf.getProperties(shadeData) \n;"
-        "shininess = 10.0;"
-        "outColor += shadowFactor * (bsdfProperties.diffuseReflectionAlbedo + (pow(NdotL, shininess) * bsdfProperties.specularReflectionAlbedo)) * M_1_PI * lightIntensity;"
-        "writeFeedback" + std::to_string(i) + "(mipLevel,shadowMapCoord);";
+        s += "resolution = getMipDimensions(0);"
+            " hitPointDx1 = shadeData.posW  + newRayDiff.getdOdx() / 2;  hitPointDx2 = shadeData.posW  - newRayDiff.getdOdx() / 2; \n"
+            " hitPointDy1 = shadeData.posW  + newRayDiff.getdOdy() / 2;  hitPointDy2 = shadeData.posW  - newRayDiff.getdOdy() / 2; \n"
+            " lightData =  gScene.getLight(" + std::to_string(i) + ");"
+            "samplePointLight(shadeData.posW, lightData, ls);"
+            " toLight = ls.dir;"
+            " toHitPos = -toLight;"
+            " lightIntensity = ls.Li;"
+            " lightPos = lightData.posW; \n"
+            " shadowCoordsDx1 = world_to_latlong_map(normalize(hitPointDx1 - lightPos)) * resolution;"
+            " shadowCoordsDx2 = world_to_latlong_map(normalize(hitPointDx2 - lightPos)) * resolution;"
+            " shadowCoordsDy1 = world_to_latlong_map(normalize(hitPointDy1 - lightPos)) * resolution;"
+            " shadowCoordsDy2 = world_to_latlong_map(normalize(hitPointDy2 - lightPos)) * resolution; \n"
+            " ShadowCoordDx = abs(shadowCoordsDx1 - shadowCoordsDx2);"
+            " ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2); \n"
+            " mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,MIPCOUNT); \n"
+            "resolution = getMipDimensions(int(mipLevel));"
+            " shadowMapCoord = world_to_latlong_map(toHitPos) * resolution;"
+            " pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);"
+            " bias = max(gDepthBias * (1.0 - dot(shadeData.N, pixel_centered_dir)), 0.01); \n"
+            " shadowFactor = 1.0f;"
+            " closestDepth = readDepth" + std::to_string(i) + "(int(mipLevel),shadowMapCoord);\n"
+            "if(closestDepth > 0.0f)"
+            "{"
+            "  float currentDepth =  ls.distance; "
+            "if(currentDepth - bias > closestDepth){"
+            "   shadowFactor = 0.0f;"
+            "}"
+            "} \n"
+            "else"
+            "{"
+            "  float closestDepth = depthRay(lightData.posW, pixel_centered_dir, 0, 1e+38f);"
+            "writeDepth" + std::to_string(i) + "(int(mipLevel), shadowMapCoord, closestDepth);\n"
+            "float currentDepth =  ls.distance;"
+            "if(currentDepth - bias > closestDepth){"
+            "    shadowFactor = 0.0f;"
+            "}"
+            "} \n"
+            " NdotL = saturate(dot(shadeData.N, toLight));"
+            "bsdf = gScene.materials.getBSDF(shadeData, lod);"
+            "bsdfProperties = bsdf.getProperties(shadeData) \n;"
+            "shininess = 10.0;"
+            "outColor += shadowFactor * (bsdfProperties.diffuseReflectionAlbedo + (pow(NdotL, shininess) * bsdfProperties.specularReflectionAlbedo)) * M_1_PI * lightIntensity;"
+            "writeFeedback" + std::to_string(i) + "(mipLevel,shadowMapCoord);";
     }
 
 

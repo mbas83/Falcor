@@ -124,6 +124,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     mpVars["PerFrameCB"]["gCameraNearPlaneDepth"] = mpScene->getCamera()->getNearPlane();
     mpVars["PerFrameCB"]["gCameraPosW"] = mpScene->getCamera()->getPosition();
     mpVars["PerFrameCB"]["gCameraTargetW"] = mpScene->getCamera()->getTarget();
+    mpVars["PerFrameCB"]["gDepthBias"] = mDepthBias;
 
 
     //mpScene->rasterize(pRenderContext, mpState.get(), mpVars.get(), mpRsState, mpRsState);
@@ -142,6 +143,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
 
 void DeferredRenderer::renderUI(Gui::Widgets& widget)
 {
+     widget.var("Depth Bias", mDepthBias, 0.f, FLT_MAX, 0.0001f);
 }
 
 void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -215,7 +217,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
     }
 }
 
-DeferredRenderer::DeferredRenderer() : RenderPass(kInfo)
+DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), mDepthBias(0.05f)
 {
     mpState = GraphicsState::create();
 
