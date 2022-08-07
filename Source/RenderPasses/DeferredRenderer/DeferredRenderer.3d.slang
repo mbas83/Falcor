@@ -161,7 +161,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     const float2 ddY = gTexGrad[pixelCoord].zw;
 
     uint2 resolution;
-    resolution = getMipDimensions(0);
+    //resolution = getMipDimensions(0);
 
     // calc the two positions at hit point
     //float3 hitPointDx1 = shadeData.posW  + newRayDiff.getdOdx() / 2;
@@ -171,42 +171,28 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     //float3 hitPointDy2 = shadeData.posW  - newRayDiff.getdOdy() / 2;
 
 
-    float2 shadowCoordsDx1 = world_to_latlong_map(normalize(hitPointDx1 - lightPos)) * resolution;
-    float2 shadowCoordsDx2 = world_to_latlong_map(normalize(hitPointDx2 - lightPos)) * resolution;
+    //float2 shadowCoordsDx1 = world_to_latlong_map(normalize(hitPointDx1 - lightPos)) * resolution;
+    //float2 shadowCoordsDx2 = world_to_latlong_map(normalize(hitPointDx2 - lightPos)) * resolution;
     // for dy
-    float2 shadowCoordsDy1 = world_to_latlong_map(normalize(hitPointDy1 - lightPos)) * resolution;
-    float2 shadowCoordsDy2 = world_to_latlong_map(normalize(hitPointDy2 - lightPos)) * resolution;
+    //float2 shadowCoordsDy1 = world_to_latlong_map(normalize(hitPointDy1 - lightPos)) * resolution;
+    //float2 shadowCoordsDy2 = world_to_latlong_map(normalize(hitPointDy2 - lightPos)) * resolution;
 
-    float2 ShadowCoordDx = abs(shadowCoordsDx1 - shadowCoordsDx2);
-    float2 ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2);
+    //float2 ShadowCoordDx = abs(shadowCoordsDx1 - shadowCoordsDx2);
+    //float2 ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2);
 
-    float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,MIPCOUNT);
+    //float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,MIPCOUNT);
 
     // Update Resolution to chosen mipmap level
-    resolution = getMipDimensions(int(mipLevel));
-    float2 shadowMapCoord = world_to_latlong_map(toHitPos) * resolution;
+    //resolution = getMipDimensions(int(mipLevel));
+    //float2 shadowMapCoord = world_to_latlong_map(toHitPos) * resolution;
     // ray should always go through center of the shadow map pixel
-    float3 pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);
+    //float3 pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);
 
     //float bias = max(gDepthBias * (1.0 - dot(shadeData.N, pixel_centered_dir)), 0.01);
 
 
     // create shadow depth ray from light pos to fragment world pos
     // Ray(origin,  dir,  tMin = 0.f, float tMax = FLT_MAX)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     float3 origin = lightPosW;
     float3 dir = normalize(worldPosW - lightPosW);
     Ray ray = Ray(origin, dir, 1.0e-4);
@@ -232,20 +218,20 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     }
 
     float shadowFactor = 1.0f;
-    float bias = max(0.1f * (1.0f - dot(normal, dir)), 0.01f);
+    float bias = max(gDepthBias * (1.0f - dot(normal, dir)), 0.01f);
 
     float currentDepth = dist;
-    if(currentDepth > closestDepth){
+    if(currentDepth - bias > closestDepth){
         shadowFactor = 0.0f;
     }
 
-    //out_color *= shadowFactor;
+    out_color *= shadowFactor;
 
 
     //debug = closestDepth;
     gDebug[pixelCoord] = float4(debug, 0.f, 0.f, 1.f);
 
-    writeFeedback(lightIndex, mipLevel, shadowMapCoord)
+    //writeFeedback(lightIndex, mipLevel, shadowMapCoord)
 
     return out_color;
 }

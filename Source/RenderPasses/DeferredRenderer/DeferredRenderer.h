@@ -86,4 +86,8 @@ private:
 
     // shadow mapping bias 
     float mDepthBias;
+
+    // for writing texture to file
+    int lightIndexToWrite = 0;
+    int mipLevelToWrite = 0;
 };

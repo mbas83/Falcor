@@ -128,10 +128,10 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
 
 
     //mpScene->rasterize(pRenderContext, mpState.get(), mpVars.get(), mpRsState, mpRsState);
-    
-    
+
+
     FALCOR_PROFILE("rasterizeScene");
-    
+
     mpState->setVao(mpLightsVao);
     mpState->setRasterizerState(mpRsState);
     mpScene->setRaytracingShaderData(pRenderContext, mpVars->getRootVar());
@@ -143,7 +143,17 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
 
 void DeferredRenderer::renderUI(Gui::Widgets& widget)
 {
-     widget.var("Depth Bias", mDepthBias, 0.f, FLT_MAX, 0.0001f);
+    widget.var("Depth Bias", mDepthBias, 0.f, FLT_MAX, 0.0001f);
+
+    //TODO: choose which light
+    if (widget.button("Save Tiled Texture Mip Level"))
+    {
+        auto filename = std::string("D:\\tiledTex_mip") + std::to_string(lightIndexToWrite) + "_" + std::to_string(mipLevelToWrite) + ".pfm";
+        mpShadowMapTextures[lightIndexToWrite]->captureToFile(mipLevelToWrite, 0, filename, Bitmap::FileFormat::PfmFile, Bitmap::ExportFlags::Uncompressed);
+    }
+
+    widget.slider("LightIndex", lightIndexToWrite, 0, static_cast<int>(mpShadowMapTextures.size()) - 1);
+    widget.slider("Mip Level", mipLevelToWrite, 0, static_cast<int>(mpShadowMapTextures[0]->getMipCount()) - 1);
 }
 
 void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
