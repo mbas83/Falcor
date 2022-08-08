@@ -277,7 +277,7 @@ void ShadowRayCache::setScene(RenderContext* pRenderContext, const Scene::Shared
             float r = 10.f;
             float3 c = light->getData().posW;
             AABB box = AABB(c - r, c + r);
-            mpScene->addCustomPrimitive(0, box);
+            //mpScene->addCustomPrimitive(0, box);
         }
         
         

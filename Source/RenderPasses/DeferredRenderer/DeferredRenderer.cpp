@@ -28,6 +28,7 @@
 #include "DeferredRenderer.h"
 
 #include "Core/API/BlendState.h"
+#include "VirtualShadowMap/Utils/MipColorData.h"
 
 const RenderPass::Info DeferredRenderer::kInfo{ "DeferredRenderer", "Uses G-Buffer for Deferred Rendering." };
 
@@ -126,11 +127,13 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     mpVars["PerFrameCB"]["gCameraTargetW"] = mpScene->getCamera()->getTarget();
     mpVars["PerFrameCB"]["gDepthBias"] = mDepthBias;
 
+    // bind mip color texture
+    mpVars["gMipColor"] = mipColorTex->asTexture();
 
-    //mpScene->rasterize(pRenderContext, mpState.get(), mpVars.get(), mpRsState, mpRsState);
+    // TODO: bind VSM textures
 
 
-    FALCOR_PROFILE("rasterizeScene");
+    FALCOR_PROFILE("drawLights");
 
     mpState->setVao(mpLightsVao);
     mpState->setRasterizerState(mpRsState);
@@ -163,7 +166,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
     if (mpScene)
     {
-        // create Program
+        // create Program desc
         Program::Desc desc;
         Shader::DefineList defines;
         desc.addShaderLibrary(kShaderFile).vsEntry("vsMain").gsEntry("gsMain").psEntry("psMain");
@@ -172,11 +175,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
         defines.add(pScene->getSceneDefines());
 
-        mpProgram = GraphicsProgram::create(desc, defines);
-        mpState->setProgram(mpProgram);
-
-        mpVars = GraphicsVars::create(mpProgram->getReflector());
-
+        // create light vertex attributes
         const auto numLights = mpScene->getLightCount();
         std::vector<PointLightVertex> pointLights;
         for (const auto& light : mpScene->getLights()) {
@@ -222,8 +221,44 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         constexpr uint shadowMapWidth = 16384;
         constexpr uint shadowMapHeight = 8192;
 
-        auto test = TiledTexture::create2DTiled(shadowMapWidth, shadowMapHeight, ResourceFormat::R32Float);
-        mpShadowMapTextures.emplace_back(test);
+        // Texture for LOD colors
+        mipColorTex = Texture::create1D(7, ResourceFormat::RGBA8Unorm, 1, 1, getMipColorData().data(), Resource::BindFlags::ShaderResource);
+
+        // create a tiled tex and feedback map for every light
+        for (uint i = 0; i < numLights; ++i)
+        {
+            auto shadowMap = TiledTexture::create2DTiled(shadowMapWidth, shadowMapHeight, ResourceFormat::R32Float);
+            pRenderContext->clearTextureAndAllMips(shadowMap.get());
+            uint tileWidth = shadowMap->getTileTexelWidth();
+            uint tileHeight = shadowMap->getTileTexelHeight();
+            mpShadowMapTextures.push_back(shadowMap);
+
+            auto feedbackTex = FeedbackTexture::createFeedbackTexture(shadowMapWidth, shadowMapHeight, tileWidth, tileHeight);
+            for (uint mipIndex = 0; mipIndex < feedbackTex->getMipCount(); ++mipIndex)
+            {
+                pRenderContext->clearUAV(feedbackTex->getUAV(mipIndex).get(), uint4(0));
+            }
+            mpFeedbackTextures.push_back(feedbackTex);
+        }
+
+        // heapsize (in tiles) for shadow maps
+        uint heapsize = numLights * mpShadowMapTextures[0]->getNumTilesTotal() / 2;
+
+        // create heap and heap tile manager
+        mpTileUpdateManager = TileUpdateManager::createTileUpdateManager(mpFeedbackTextures, mpShadowMapTextures, heapsize, pRenderContext);
+
+        // TODO: move VSM init to other file?
+
+
+        // TODO: add defines for shadow map access
+
+        mpProgram = GraphicsProgram::create(desc, defines);
+        mpState->setProgram(mpProgram);
+
+        mpVars = GraphicsVars::create(mpProgram->getReflector());
+
+
+
     }
 }
 

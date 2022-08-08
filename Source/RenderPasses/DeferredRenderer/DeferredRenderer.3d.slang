@@ -115,13 +115,17 @@ void gsMain(point VsOut input[1], inout TriangleStream<GsOut> outStream)
 }
 
 
-
+// GBuffer
 Texture2D<float4> gWorldPos;
 Texture2D<float4> gWorldNormal;
 Texture2D<float4> gDiffuse;
 Texture2D<float4> gSpecular;
 Texture2D<float4> gTexGrad;
 
+// LOD level visualisation
+Texture1D<float4> gMipColor;
+
+// Output
 RWTexture2D<float4> gDebug;
 
 float4 psMain(GsOut gsOut) : SV_TARGET0
