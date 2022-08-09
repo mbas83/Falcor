@@ -1,7 +1,24 @@
-
 import Scene.RaytracingInline;
 import Utils.Math.Ray;
 import Utils.Math.MathHelpers;
+
+// Defines for Shadow Map Access
+
+// used for definitions of shadow textures:
+SHADOW_TEXTURES
+// used for definition of function: void writeToMip'lightIndex'(int mipLevel, uint2 coords, float value)
+WRITE_TO_MIP_FUNC
+// used for definition of function: float readFromMip'lightIndex'(int mipLevel, uint2 coords)
+READ_FROM_MIP_FUNC
+// used for definition of function: uint2 getMipDimensions(int mipLevel) 
+GET_MIP_DIMENSIONS_FUNC
+
+// Feedback Map: gFeedbackMip'lightIndex'_'mipLevel';
+FEEDBACK_TEXTURES
+// function to write feedback: void writeFeedback'lightIndex'(int mipLevel, uint2 coordinate)
+WRITE_FEEDBACK_FUNC
+
+
 
 cbuffer PerFrameCB
 {
@@ -80,33 +97,25 @@ void gsMain(point VsOut input[1], inout TriangleStream<GsOut> outStream)
 
     // vertex 0
     float4 newPos = center_pos + float4(-radius,-radius,billboard_depth,0);
-
     newPos = center_pos - radius*float4(t,0) - radius*float4(b,0);
-
     gsOut.posH = mul(newPos,gProjMat);
     outStream.Append(gsOut);
 
     // vertex 1
     newPos = center_pos + float4(radius,-radius,billboard_depth,0);
-
     newPos = center_pos + radius*float4(t,0) - radius*float4(b,0);
-
     gsOut.posH = mul(newPos,gProjMat);
     outStream.Append(gsOut);
 
     // vertex 2
     newPos = center_pos + float4(-radius,radius,billboard_depth,0);
-
     newPos = center_pos - radius*float4(t,0) + radius*float4(b,0);
-
     gsOut.posH = mul(newPos,gProjMat);
     outStream.Append(gsOut);
 
     // vertex 3
     newPos = center_pos + float4(radius,radius,billboard_depth,0);
-
     newPos = center_pos + radius*float4(t,0) + radius*float4(b,0);
-
     gsOut.posH = mul(newPos,gProjMat);
     outStream.Append(gsOut);
 

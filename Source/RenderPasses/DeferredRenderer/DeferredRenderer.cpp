@@ -29,6 +29,7 @@
 
 #include "Core/API/BlendState.h"
 #include "VirtualShadowMap/Utils/MipColorData.h"
+#include "VirtualShadowMap/Utils/ShaderDefineUtils.h"
 
 const RenderPass::Info DeferredRenderer::kInfo{ "DeferredRenderer", "Uses G-Buffer for Deferred Rendering." };
 
@@ -127,11 +128,25 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     mpVars["PerFrameCB"]["gCameraTargetW"] = mpScene->getCamera()->getTarget();
     mpVars["PerFrameCB"]["gDepthBias"] = mDepthBias;
 
+    // bind all mip uavs for all lights
+    for (uint lightIndex = 0; lightIndex < mpScene->getActiveLightCount(); ++lightIndex)
+    {
+        for (uint mipLevel = 0; mipLevel < mpShadowMapTextures[0]->getMipCount(); ++mipLevel) {
+            mpVars["gShadowMap" + std::to_string(lightIndex) + "_" + std::to_string(mipLevel)].setUav(mpShadowMapTextures[lightIndex]->getUAV(mipLevel));
+        }
+    }
+    
+    // bind all feedback texture standard mip uavs
+    for (uint lightIndex = 0; lightIndex < mpScene->getActiveLightCount(); ++lightIndex)
+    {
+        // feedback only for standard packed mips
+        for (uint mipLevel = 0; mipLevel < mpShadowMapTextures[0]->getPackedMipInfo().NumStandardMips; ++mipLevel) {
+            mpVars["gFeedbackMip" + std::to_string(lightIndex) + "_" + std::to_string(mipLevel)].setUav(mpFeedbackTextures[lightIndex]->getUAV(mipLevel));
+        }
+    }
+
     // bind mip color texture
     mpVars["gMipColor"] = mipColorTex->asTexture();
-
-    // TODO: bind VSM textures
-
 
     FALCOR_PROFILE("drawLights");
 
@@ -142,6 +157,11 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
 
     pRenderContext->drawIndirect(mpState.get(), mpVars.get(), 1, mpDrawBuffer.get(), 0, nullptr, 0);
 
+
+    // Feedback processing
+    //mpTileUpdateManager->processFeedback();
+    //mpTileUpdateManager->updateTiles();
+    //mpTileUpdateManager->clearFeedback();
 }
 
 void DeferredRenderer::renderUI(Gui::Widgets& widget)
@@ -249,8 +269,18 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
         // TODO: move VSM init to other file?
 
+        // add defines for shadow map access
+        const uint numMips = mpShadowMapTextures[0]->getMipCount();
 
-        // TODO: add defines for shadow map access
+        defines.add("SHADOW_TEXTURES",getMipViewDefineString(numLights,numMips));
+        defines.add("WRITE_TO_MIP_FUNC",getWriteToMipFunctionString(numLights,numMips));
+        defines.add("READ_FROM_MIP_FUNC",getReadFromMipFunctionString(numLights,numMips));
+        defines.add("GET_MIP_DIMENSIONS_FUNC",mipDimensionsFunctionString(numMips));
+
+        defines.add("FEEDBACK_TEXTURES",getFeedbackViewDefineString(numLights,numMips));
+        defines.add("WRITE_FEEDBACK_FUNC",getWriteFeedbackString(numLights,numMips));
+
+
 
         mpProgram = GraphicsProgram::create(desc, defines);
         mpState->setProgram(mpProgram);
