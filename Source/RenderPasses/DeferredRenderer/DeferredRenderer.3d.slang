@@ -19,7 +19,6 @@ FEEDBACK_TEXTURES
 WRITE_FEEDBACK_FUNC
 
 
-
 cbuffer PerFrameCB
 {
     float4x4 gViewMat;

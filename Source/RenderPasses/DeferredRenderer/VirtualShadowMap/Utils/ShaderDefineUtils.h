@@ -22,7 +22,7 @@ static std::string getMipViewDefineString(const uint32_t lightCount, const uint3
 
 static std::string mipDimensionsFunctionString(const uint32_t mipCount)
 {
-    std::string s("uint2 getMipDimensions(int mipLevel){uint2 resolution; switch(lightIndex){");
+    std::string s("uint2 getMipDimensions(int mipLevel){uint2 resolution; switch(mipLevel){");
 
     for (uint32_t i = 0; i < mipCount; ++i)
     {
@@ -70,7 +70,7 @@ static std::string getReadFromMipFunctionString(const uint32_t lightCount, const
     {
         s += "case " + std::to_string(lightIndex) + ": switch(mipLevel){";
 
-        for (int mipIndex = 0; mipIndex < mipCount; ++mipIndex)
+        for (uint32_t mipIndex = 0; mipIndex < mipCount; ++mipIndex)
         {
             // switch case for every mip level view
             s += "case " + std::to_string(mipIndex) + ": return gShadowMap" + std::to_string(lightIndex) + "_" + std::to_string(mipIndex) + "[coords];";
@@ -139,7 +139,7 @@ static std::string getWriteFeedbackString(const uint32_t lightCount, const uint3
     {
         s += "case " + std::to_string(lightIndex) + ": switch(mipLevel){";
 
-        for (int mipLevel = 0; mipLevel < standardMipCount; ++mipLevel)
+        for (uint32_t mipLevel = 0; mipLevel < standardMipCount; ++mipLevel)
         {
             // switch case for every mip level view
             s += "case " + std::to_string(mipLevel) + ": gFeedbackMip" + std::to_string(lightIndex) + "_" + std::to_string(mipLevel) + "[feedback_coord] = 0xFF;break;";

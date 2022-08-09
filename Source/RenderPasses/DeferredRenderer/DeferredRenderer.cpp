@@ -271,16 +271,21 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
         // add defines for shadow map access
         const uint numMips = mpShadowMapTextures[0]->getMipCount();
+        const uint tileWidth = mpShadowMapTextures[0]->getTileTexelWidth();
+        const uint tileHeight = mpShadowMapTextures[0]->getTileTexelHeight();
+        const uint numStandardMips = mpShadowMapTextures[0]->getPackedMipInfo().NumStandardMips;
+
 
         defines.add("SHADOW_TEXTURES",getMipViewDefineString(numLights,numMips));
         defines.add("WRITE_TO_MIP_FUNC",getWriteToMipFunctionString(numLights,numMips));
         defines.add("READ_FROM_MIP_FUNC",getReadFromMipFunctionString(numLights,numMips));
         defines.add("GET_MIP_DIMENSIONS_FUNC",mipDimensionsFunctionString(numMips));
 
-        defines.add("FEEDBACK_TEXTURES",getFeedbackViewDefineString(numLights,numMips));
-        defines.add("WRITE_FEEDBACK_FUNC",getWriteFeedbackString(numLights,numMips));
+        defines.add("FEEDBACK_TEXTURES",getFeedbackViewDefineString(numLights,numStandardMips));
+        defines.add("WRITE_FEEDBACK_FUNC",getWriteFeedbackString(numLights,numStandardMips));
 
-
+        defines.add("TILE_WIDTH", std::to_string(tileWidth));
+        defines.add("TILE_HEIGHT", std::to_string(tileHeight));
 
         mpProgram = GraphicsProgram::create(desc, defines);
         mpState->setProgram(mpProgram);
