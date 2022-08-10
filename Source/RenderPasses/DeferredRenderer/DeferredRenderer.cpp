@@ -71,9 +71,8 @@ namespace
 
     struct PointLightVertex
     {
-        float3 pos;
         float radius;
-        float3 color;
+        uint lightIndex;
     };
 
 }
@@ -137,7 +136,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
             mpVars["gShadowMap" + std::to_string(lightIndex) + "_" + std::to_string(mipLevel)].setUav(mpShadowMapTextures[lightIndex]->getUAV(mipLevel));
         }
     }
-    
+
     // bind all feedback texture standard mip uavs
     for (uint lightIndex = 0; lightIndex < mpScene->getActiveLightCount(); ++lightIndex)
     {
@@ -197,16 +196,17 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         defines.add(pScene->getSceneDefines());
 
         // create light vertex attributes
-        const auto numLights = mpScene->getLightCount();
+        const auto numLights = mpScene->getActiveLightCount();
         std::vector<PointLightVertex> pointLights;
-        for (const auto& light : mpScene->getLights()) {
-            PointLightVertex p;
-            const auto& lightData = light->getData();
-            p.pos = lightData.posW;
-            p.color = lightData.intensity;
-            //TODO: radius?
-            p.radius = 10;
 
+        const auto sceneLights = mpScene->getActiveLights();
+
+        for (uint i = 0; i < numLights; ++i)
+        {
+            PointLightVertex p;
+            const auto& lightData = mpScene->getLight(i)->getData();
+            p.radius = 10; //TODO: change radius calculation
+            p.lightIndex = i;
             pointLights.emplace_back(p);
         }
 
@@ -214,13 +214,14 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         auto pVB = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::CpuAccess::Write, (void*)pointLights.data());
         FALCOR_ASSERT(pVB);
 
-        // create vao
+        // create vao (only need radius and index of light, 
         VertexLayout::SharedPtr pLayout = VertexLayout::create();
         VertexBufferLayout::SharedPtr pBufLayout = VertexBufferLayout::create();
-        pBufLayout->addElement("POSITION", 0, ResourceFormat::RGB32Float, 1, 0);               //pos
-        pBufLayout->addElement("PSIZE", 3 * sizeof(float), ResourceFormat::R32Float, 1, 1);    //radius
-        pBufLayout->addElement("COLOR", 4 * sizeof(float), ResourceFormat::RGB32Float, 1, 2);   //color
+        pBufLayout->addElement("RADIUSSIZE", 0, ResourceFormat::R32Float, 1, 0);    //radius
+        pBufLayout->addElement("LIGHTINDEX", 1 * sizeof(float), ResourceFormat::R16Uint, 1, 1);    //lightindex
         pLayout->addBufferLayout(0, pBufLayout);
+
+        
 
         Vao::BufferVec buffers{ pVB };
         mpLightsVao = Vao::create(Vao::Topology::PointList, pLayout, buffers);
@@ -269,21 +270,21 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
         // create heap and heap tile manager
         mpTileUpdateManager = TileUpdateManager::createTileUpdateManager(mpFeedbackTextures, mpShadowMapTextures, heapsize, pRenderContext);
-               
+
 
         // add defines for shadow map access
         const uint numMips = mpShadowMapTextures[0]->getMipCount();
         const uint tileWidth = mpShadowMapTextures[0]->getTileTexelWidth();
         const uint tileHeight = mpShadowMapTextures[0]->getTileTexelHeight();
         const uint numStandardMips = mpShadowMapTextures[0]->getPackedMipInfo().NumStandardMips;
-        
-        defines.add("SHADOW_TEXTURES",getMipViewDefineString(numLights,numMips));
-        defines.add("WRITE_TO_MIP_FUNC",getWriteToMipFunctionString(numLights,numMips));
-        defines.add("READ_FROM_MIP_FUNC",getReadFromMipFunctionString(numLights,numMips));
-        defines.add("GET_MIP_DIMENSIONS_FUNC",mipDimensionsFunctionString(numMips));
 
-        defines.add("FEEDBACK_TEXTURES",getFeedbackViewDefineString(numLights,numStandardMips));
-        defines.add("WRITE_FEEDBACK_FUNC",getWriteFeedbackString(numLights,numStandardMips));
+        defines.add("SHADOW_TEXTURES", getMipViewDefineString(numLights, numMips));
+        defines.add("WRITE_TO_MIP_FUNC", getWriteToMipFunctionString(numLights, numMips));
+        defines.add("READ_FROM_MIP_FUNC", getReadFromMipFunctionString(numLights, numMips));
+        defines.add("GET_MIP_DIMENSIONS_FUNC", mipDimensionsFunctionString(numMips));
+
+        defines.add("FEEDBACK_TEXTURES", getFeedbackViewDefineString(numLights, numStandardMips));
+        defines.add("WRITE_FEEDBACK_FUNC", getWriteFeedbackString(numLights, numStandardMips));
 
         defines.add("TILE_WIDTH", std::to_string(tileWidth));
         defines.add("TILE_HEIGHT", std::to_string(tileHeight));
@@ -292,7 +293,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         mpState->setProgram(mpProgram);
 
         mpVars = GraphicsVars::create(mpProgram->getReflector());
-        
+
     }
 }
 

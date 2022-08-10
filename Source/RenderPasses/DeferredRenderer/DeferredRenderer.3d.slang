@@ -6,16 +6,16 @@ import Utils.Math.MathHelpers;
 
 // used for definitions of shadow textures:
 SHADOW_TEXTURES
-// used for definition of function: void writeToMip'lightIndex'(int mipLevel, uint2 coords, float value)
+// used for definition of function: void writeToMip'lightIndex'(uint lightIndex, uint mipLevel, uint2 coords, float value)
 WRITE_TO_MIP_FUNC
-// used for definition of function: float readFromMip'lightIndex'(int mipLevel, uint2 coords)
+// used for definition of function: float readFromMip'lightIndex'(uint lightIndex, uint mipLevel, uint2 coords)
 READ_FROM_MIP_FUNC
-// used for definition of function: uint2 getMipDimensions(int mipLevel) 
+// used for definition of function: uint2 getMipDimensions(uint mipLevel) 
 GET_MIP_DIMENSIONS_FUNC
 
 // Feedback Map: gFeedbackMip'lightIndex'_'mipLevel';
 FEEDBACK_TEXTURES
-// function to write feedback: void writeFeedback'lightIndex'(int mipLevel, uint2 coordinate)
+// function to write feedback: void writeFeedback(uint lightIndex, uint mipLevel, uint2 coordinate)
 WRITE_FEEDBACK_FUNC
 
 
@@ -30,17 +30,15 @@ cbuffer PerFrameCB
 };
 
 struct VsIn{
-    float3 posW : POSITION;
-    float radius : PSIZE;
-    float3 color : COLOR;
+    float radius : RADIUSSIZE;
+    uint index : LIGHTINDEX;
 };
 
 struct VsOut{
     float4 posH : SV_POSITION;
 
-    float3 posW : POSITION;
-    float radius : PSIZE;
-    float3 color : COLOR;
+    float radius : RADIUSSIZE;
+    uint index: LIGHTINDEX;
 };
 
 
@@ -49,12 +47,10 @@ VsOut vsMain(VsIn vIn)
     VsOut vsOut;
 
     // pass through
-    vsOut.posW = vIn.posW;
     vsOut.radius = vIn.radius;
-    vsOut.color = vIn.color;
-
-    
-    vsOut.posH = mul(float4(vsOut.posW,1.f), gViewMat);
+    vsOut.index = vIn.index;
+        
+    vsOut.posH = mul(float4(gScene.getLight(vsOut.index).posW,1.f), gViewMat);
     vsOut.posH = mul(vsOut.posH, gProjMat);
     
     return vsOut;
@@ -65,29 +61,31 @@ struct GsOut
 {
     float4 posH : SV_POSITION;
 
-    float3 posW : POSITION;
-    float radius : PSIZE;
-    float3 color : COLOR;
+    float radius : RADIUSSIZE;
+    uint index : LIGHTINDEX;
 };
 
 [maxvertexcount(4)]
 void gsMain(point VsOut input[1], inout TriangleStream<GsOut> outStream)
 {
     GsOut gsOut;
-    gsOut.posW = input[0].posW;
     gsOut.radius = input[0].radius;
-    gsOut.color = input[0].color;
+    gsOut.index = input[0].index;
 
     float radius = input[0].radius;
 
+    const LightData light = gScene.getLight(gsOut.index);
+
+    float3 lightPosW = light.posW;
+
     //billboard tangent space
-    float3 n = normalize(gCameraPosW - input[0].posW);
+    float3 n = normalize(gCameraPosW - lightPosW);
     float3 t = normalize(cross(float3(0,1,0), n));
     float3 b = normalize(cross(n,t));
 
 
     //gScene.camera
-    float3 billboard_behind = gsOut.posW - (n * radius);
+    float3 billboard_behind = lightPosW - (n * radius);
 
     float4 center_pos = mul(float4(billboard_behind,1.f), gViewMat);
         
@@ -136,11 +134,13 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
      
     int2 pixelCoord = gsOut.posH.xy;
 
+    const LightData light = gScene.getLight(gsOut.index);
+    float3 lightPosW = light.posW;
+
     float3 diffuseColor = gDiffuse[pixelCoord].rgb;
     float3 specularColor = gSpecular[pixelCoord].rgb;
     float3 worldPosW = gWorldPos[pixelCoord].xyz;
     float3 normal = normalize(gWorldNormal[pixelCoord].xyz);
-    float3 lightPosW = gsOut.posW;
 
     float3 direction = lightPosW - worldPosW;
     float dist = length(direction);
@@ -153,7 +153,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     // use correct attenuation
     attenuation = 1.f / (dist*dist);
-    float3 lightColor = max(dot(direction, normal), 0.0) * gsOut.color * attenuation;
+    float3 lightColor = max(dot(direction, normal), 0.0) * light.intensity * attenuation;
 
     out_color = float4(lightColor * (diffuseColor + specularColor), 1);
 
