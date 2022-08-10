@@ -79,41 +79,35 @@ void gsMain(point VsOut input[1], inout TriangleStream<GsOut> outStream)
     gsOut.color = input[0].color;
 
     float radius = input[0].radius;
-        
-
-    float4 center_pos = mul(float4(gsOut.posW,1.f), gViewMat);
-    //gScene.camera
-
-    float3 dir = gCameraTargetW - gCameraPosW;
-    float depthSign = sign(gCameraTargetW.z);
-    // depends on viewdirection -z or +z
-    float billboard_depth = -1 * radius;
 
     //billboard tangent space
     float3 n = normalize(gCameraPosW - input[0].posW);
     float3 t = normalize(cross(float3(0,1,0), n));
     float3 b = normalize(cross(n,t));
 
+
+    //gScene.camera
+    float3 billboard_behind = gsOut.posW - (n * radius);
+
+    float4 center_pos = mul(float4(billboard_behind,1.f), gViewMat);
+        
+
     // vertex 0
-    float4 newPos = center_pos + float4(-radius,-radius,billboard_depth,0);
-    newPos = center_pos - radius*float4(t,0) - radius*float4(b,0);
+    float4 newPos = center_pos - radius*float4(t,0) - radius*float4(b,0) ;
     gsOut.posH = mul(newPos,gProjMat);
     outStream.Append(gsOut);
 
     // vertex 1
-    newPos = center_pos + float4(radius,-radius,billboard_depth,0);
     newPos = center_pos + radius*float4(t,0) - radius*float4(b,0);
     gsOut.posH = mul(newPos,gProjMat);
     outStream.Append(gsOut);
 
     // vertex 2
-    newPos = center_pos + float4(-radius,radius,billboard_depth,0);
     newPos = center_pos - radius*float4(t,0) + radius*float4(b,0);
     gsOut.posH = mul(newPos,gProjMat);
     outStream.Append(gsOut);
 
     // vertex 3
-    newPos = center_pos + float4(radius,radius,billboard_depth,0);
     newPos = center_pos + radius*float4(t,0) + radius*float4(b,0);
     gsOut.posH = mul(newPos,gProjMat);
     outStream.Append(gsOut);
@@ -243,7 +237,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     //debug = closestDepth;
     gDebug[pixelCoord] = float4(debug, 0.f, 0.f, 1.f);
 
-    //writeFeedback(lightIndex, mipLevel, shadowMapCoord)
+    //writeFeedback(0, 0, uint2(0,0));
 
     return out_color;
 }

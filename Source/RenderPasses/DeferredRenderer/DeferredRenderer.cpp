@@ -128,6 +128,8 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     mpVars["PerFrameCB"]["gCameraTargetW"] = mpScene->getCamera()->getTarget();
     mpVars["PerFrameCB"]["gDepthBias"] = mDepthBias;
 
+    /*
+
     // bind all mip uavs for all lights
     for (uint lightIndex = 0; lightIndex < mpScene->getActiveLightCount(); ++lightIndex)
     {
@@ -143,7 +145,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
         for (uint mipLevel = 0; mipLevel < mpShadowMapTextures[0]->getPackedMipInfo().NumStandardMips; ++mipLevel) {
             mpVars["gFeedbackMip" + std::to_string(lightIndex) + "_" + std::to_string(mipLevel)].setUav(mpFeedbackTextures[lightIndex]->getUAV(mipLevel));
         }
-    }
+    }*/
 
     // bind mip color texture
     mpVars["gMipColor"] = mipColorTex->asTexture();
@@ -168,7 +170,6 @@ void DeferredRenderer::renderUI(Gui::Widgets& widget)
 {
     widget.var("Depth Bias", mDepthBias, 0.f, FLT_MAX, 0.0001f);
 
-    //TODO: choose which light
     if (widget.button("Save Tiled Texture Mip Level"))
     {
         auto filename = std::string("D:\\tiledTex_mip") + std::to_string(lightIndexToWrite) + "_" + std::to_string(mipLevelToWrite) + ".pfm";
@@ -228,8 +229,8 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         std::vector<DrawArguments> drawLightPoints;
 
         DrawArguments draw;
-        draw.VertexCountPerInstance = 1;
-        draw.InstanceCount = numLights;
+        draw.VertexCountPerInstance = numLights;
+        draw.InstanceCount = 1;
         draw.StartVertexLocation = 0;
         draw.StartInstanceLocation = 0;
         drawLightPoints.push_back(draw);
@@ -243,6 +244,8 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
         // Texture for LOD colors
         mipColorTex = Texture::create1D(7, ResourceFormat::RGBA8Unorm, 1, 1, getMipColorData().data(), Resource::BindFlags::ShaderResource);
+
+        // TODO: move VSM init to other file?
 
         // create a tiled tex and feedback map for every light
         for (uint i = 0; i < numLights; ++i)
@@ -266,16 +269,14 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
         // create heap and heap tile manager
         mpTileUpdateManager = TileUpdateManager::createTileUpdateManager(mpFeedbackTextures, mpShadowMapTextures, heapsize, pRenderContext);
-
-        // TODO: move VSM init to other file?
+               
 
         // add defines for shadow map access
         const uint numMips = mpShadowMapTextures[0]->getMipCount();
         const uint tileWidth = mpShadowMapTextures[0]->getTileTexelWidth();
         const uint tileHeight = mpShadowMapTextures[0]->getTileTexelHeight();
         const uint numStandardMips = mpShadowMapTextures[0]->getPackedMipInfo().NumStandardMips;
-
-
+        
         defines.add("SHADOW_TEXTURES",getMipViewDefineString(numLights,numMips));
         defines.add("WRITE_TO_MIP_FUNC",getWriteToMipFunctionString(numLights,numMips));
         defines.add("READ_FROM_MIP_FUNC",getReadFromMipFunctionString(numLights,numMips));
@@ -291,9 +292,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         mpState->setProgram(mpProgram);
 
         mpVars = GraphicsVars::create(mpProgram->getReflector());
-
-
-
+        
     }
 }
 
