@@ -120,16 +120,11 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     //Output
     mpVars["gDebug"] = renderData[kDebug]->asTexture();
 
-    mpVars["PerFrameCB"]["gViewMat"] = mpScene->getCamera()->getViewMatrix();
-    mpVars["PerFrameCB"]["gProjMat"] = mpScene->getCamera()->getProjMatrix();
-    mpVars["PerFrameCB"]["gCameraNearPlaneDepth"] = mpScene->getCamera()->getNearPlane();
-    mpVars["PerFrameCB"]["gCameraPosW"] = mpScene->getCamera()->getPosition();
-    mpVars["PerFrameCB"]["gCameraTargetW"] = mpScene->getCamera()->getTarget();
     mpVars["PerFrameCB"]["gDepthBias"] = mDepthBias;
 
     /*
 
-    // bind all mip uavs for all lights
+    // bind all mip uavs for all ligh ts
     for (uint lightIndex = 0; lightIndex < mpScene->getActiveLightCount(); ++lightIndex)
     {
         for (uint mipLevel = 0; mipLevel < mpShadowMapTextures[0]->getMipCount(); ++mipLevel) {
@@ -220,8 +215,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         pBufLayout->addElement("RADIUSSIZE", 0, ResourceFormat::R32Float, 1, 0);    //radius
         pBufLayout->addElement("LIGHTINDEX", 1 * sizeof(float), ResourceFormat::R16Uint, 1, 1);    //lightindex
         pLayout->addBufferLayout(0, pBufLayout);
-
-        
+                
 
         Vao::BufferVec buffers{ pVB };
         mpLightsVao = Vao::create(Vao::Topology::PointList, pLayout, buffers);

@@ -21,11 +21,6 @@ WRITE_FEEDBACK_FUNC
 
 cbuffer PerFrameCB
 {
-    float4x4 gViewMat;
-    float4x4 gProjMat;
-    float    gCameraNearPlaneDepth;
-    float3   gCameraPosW;
-    float3   gCameraTargetW;
     float gDepthBias;
 };
 
@@ -50,8 +45,8 @@ VsOut vsMain(VsIn vIn)
     vsOut.radius = vIn.radius;
     vsOut.index = vIn.index;
         
-    vsOut.posH = mul(float4(gScene.getLight(vsOut.index).posW,1.f), gViewMat);
-    vsOut.posH = mul(vsOut.posH, gProjMat);
+    vsOut.posH = mul(float4(gScene.getLight(vsOut.index).posW,1.f), gScene.camera.data.viewMat);
+    vsOut.posH = mul(vsOut.posH, gScene.camera.data.projMat);
     
     return vsOut;
 }
@@ -79,7 +74,7 @@ void gsMain(point VsOut input[1], inout TriangleStream<GsOut> outStream)
     float3 lightPosW = light.posW;
 
     //billboard tangent space
-    float3 n = normalize(gCameraPosW - lightPosW);
+    float3 n = normalize(gScene.camera.data.posW - lightPosW);
     float3 t = normalize(cross(float3(0,1,0), n));
     float3 b = normalize(cross(n,t));
 
@@ -87,27 +82,27 @@ void gsMain(point VsOut input[1], inout TriangleStream<GsOut> outStream)
     //gScene.camera
     float3 billboard_behind = lightPosW - (n * radius);
 
-    float4 center_pos = mul(float4(billboard_behind,1.f), gViewMat);
+    float4 center_pos = mul(float4(billboard_behind,1.f), gScene.camera.data.viewMat);
         
 
     // vertex 0
     float4 newPos = center_pos - radius*float4(t,0) - radius*float4(b,0) ;
-    gsOut.posH = mul(newPos,gProjMat);
+    gsOut.posH = mul(newPos,gScene.camera.data.projMat);
     outStream.Append(gsOut);
 
     // vertex 1
     newPos = center_pos + radius*float4(t,0) - radius*float4(b,0);
-    gsOut.posH = mul(newPos,gProjMat);
+    gsOut.posH = mul(newPos,gScene.camera.data.projMat);
     outStream.Append(gsOut);
 
     // vertex 2
     newPos = center_pos - radius*float4(t,0) + radius*float4(b,0);
-    gsOut.posH = mul(newPos,gProjMat);
+    gsOut.posH = mul(newPos,gScene.camera.data.projMat);
     outStream.Append(gsOut);
 
     // vertex 3
     newPos = center_pos + radius*float4(t,0) + radius*float4(b,0);
-    gsOut.posH = mul(newPos,gProjMat);
+    gsOut.posH = mul(newPos,gScene.camera.data.projMat);
     outStream.Append(gsOut);
 
     outStream.RestartStrip();
