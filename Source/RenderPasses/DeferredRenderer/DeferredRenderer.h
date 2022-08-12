@@ -90,4 +90,7 @@ private:
     // for writing texture to file
     int lightIndexToWrite = 0;
     int mipLevelToWrite = 0;
+
+
+    bool mSaveDebug = false;
 };

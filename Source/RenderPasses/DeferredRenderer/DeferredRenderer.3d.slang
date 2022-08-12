@@ -2,6 +2,8 @@ import Scene.RaytracingInline;
 import Utils.Math.Ray;
 import Utils.Math.MathHelpers;
 
+import RenderPasses.ShadowRayCache.Helper;
+
 // Defines for Shadow Map Access
 
 // used for definitions of shadow textures:
@@ -156,40 +158,54 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     // calc mipLevel
     //const float4 texGrads = float4(ddx(sd.uv), ddy(sd.uv));
-    // use computeDdxPosW from gbuffer, or rt gems ch. 20?
 
-    const float2 ddX = gTexGrad[pixelCoord].xy;
-    const float2 ddY = gTexGrad[pixelCoord].zw;
+
+    // ray tracing gems ch.20 ray diffs with g-buffer
+    float3 eyePos = gScene.camera.data.posW;
+    float3 eyeRay = worldPosW - eyePos;
+
+    float3 e00 = normalize(eyeRay); float t00 = length(eyeRay);
+
+    // +1 in x direction
+    eyeRay = gWorldPos[pixelCoord + int2(1,0)].xyz - eyePos;
+    float3 e10 = normalize(eyeRay); float t10 = length(eyeRay);
+
+    // +1 in y-direction
+    eyeRay = gWorldPos[pixelCoord + int2(0,1)].xyz - eyePos;
+    float3 e01 = normalize(eyeRay); float t01 = length(eyeRay);
+
+    float3 dOdx = t10 * e10 - t00 * e00;
+    float3 dOdy = t10 * e01 - t00 * e00;
 
     uint2 resolution;
-    //resolution = getMipDimensions(0);
+    resolution = getMipDimensions(0);
 
     // calc the two positions at hit point
-    //float3 hitPointDx1 = shadeData.posW  + newRayDiff.getdOdx() / 2;
-    //float3 hitPointDx2 = shadeData.posW  - newRayDiff.getdOdx() / 2;
+    float3 hitPointDx1 = worldPosW  + dOdx / 2;
+    float3 hitPointDx2 = worldPosW  - dOdx / 2;
     // for dy
-    //float3 hitPointDy1 = shadeData.posW  + newRayDiff.getdOdy() / 2;
-    //float3 hitPointDy2 = shadeData.posW  - newRayDiff.getdOdy() / 2;
+    float3 hitPointDy1 = worldPosW  + dOdy / 2;
+    float3 hitPointDy2 = worldPosW  - dOdy / 2;
 
 
-    //float2 shadowCoordsDx1 = world_to_latlong_map(normalize(hitPointDx1 - lightPos)) * resolution;
-    //float2 shadowCoordsDx2 = world_to_latlong_map(normalize(hitPointDx2 - lightPos)) * resolution;
+    float2 shadowCoordsDx1 = world_to_latlong_map(normalize(hitPointDx1 - lightPosW)) * resolution;
+    float2 shadowCoordsDx2 = world_to_latlong_map(normalize(hitPointDx2 - lightPosW)) * resolution;
     // for dy
-    //float2 shadowCoordsDy1 = world_to_latlong_map(normalize(hitPointDy1 - lightPos)) * resolution;
-    //float2 shadowCoordsDy2 = world_to_latlong_map(normalize(hitPointDy2 - lightPos)) * resolution;
+    float2 shadowCoordsDy1 = world_to_latlong_map(normalize(hitPointDy1 - lightPosW)) * resolution;
+    float2 shadowCoordsDy2 = world_to_latlong_map(normalize(hitPointDy2 - lightPosW)) * resolution;
 
-    //float2 ShadowCoordDx = abs(shadowCoordsDx1 - shadowCoordsDx2);
-    //float2 ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2);
+    float2 ShadowCoordDx = abs(shadowCoordsDx1 - shadowCoordsDx2);
+    float2 ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2);
 
-    //float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,MIPCOUNT);
+    float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,MIPCOUNT);
+
+    mipLevel = calcLod(ShadowCoordDx, ShadowCoordDy);
 
     // Update Resolution to chosen mipmap level
-    //resolution = getMipDimensions(int(mipLevel));
-    //float2 shadowMapCoord = world_to_latlong_map(toHitPos) * resolution;
+    resolution = getMipDimensions(int(mipLevel));
+    float2 shadowMapCoord = world_to_latlong_map(-direction) * resolution;
     // ray should always go through center of the shadow map pixel
-    //float3 pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);
-
-    //float bias = max(gDepthBias * (1.0 - dot(shadeData.N, pixel_centered_dir)), 0.01);
+    float3 pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);
 
 
     // create shadow depth ray from light pos to fragment world pos
@@ -198,18 +214,15 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     float3 dir = normalize(worldPosW - lightPosW);
     Ray ray = Ray(origin, dir, 1.0e-4);
 
-
     SceneRayQuery<0> sceneRayQuery;
     HitInfo hit;
     float hitT;
     float closestDepth = 0.f;
     uint flags = RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES;
 
-    float debug = 0.f;
 
     if (sceneRayQuery.traceRay(ray, hit, hitT, flags, 0xff))
     {
-        debug = 1.f;
         // hitT == depth from light
         closestDepth = hitT;
     }
@@ -228,11 +241,10 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     out_color *= shadowFactor;
 
+       
+    gDebug[pixelCoord] = float4(mipLevel);
 
-    //debug = closestDepth;
-    gDebug[pixelCoord] = float4(debug, 0.f, 0.f, 1.f);
-
-    //writeFeedback(0, 0, uint2(0,0));
+    //writeFeedback(lightIndex, mipLevel, shadowMapCoord);
 
     return out_color;
 }

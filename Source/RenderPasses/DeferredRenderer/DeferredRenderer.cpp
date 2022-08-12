@@ -108,6 +108,8 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     pRenderContext->clearFbo(mpFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mpState->setFbo(mpFbo);
 
+    pRenderContext->clearTexture(renderData[kDebug]->asTexture().get());
+
     if (!mpScene) return;
 
     // GBuffer Input
@@ -154,6 +156,13 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     pRenderContext->drawIndirect(mpState.get(), mpVars.get(), 1, mpDrawBuffer.get(), 0, nullptr, 0);
 
 
+    if (mSaveDebug)
+    {
+        auto filename = std::string("D:\\debugTex") + ".pfm";
+        renderData[kDebug]->asTexture()->captureToFile(0, 0, filename, Bitmap::FileFormat::PfmFile, Bitmap::ExportFlags::Uncompressed);
+        mSaveDebug = false;
+    }
+
     // Feedback processing
     //mpTileUpdateManager->processFeedback();
     //mpTileUpdateManager->updateTiles();
@@ -168,6 +177,11 @@ void DeferredRenderer::renderUI(Gui::Widgets& widget)
     {
         auto filename = std::string("D:\\tiledTex_mip") + std::to_string(lightIndexToWrite) + "_" + std::to_string(mipLevelToWrite) + ".pfm";
         mpShadowMapTextures[lightIndexToWrite]->captureToFile(mipLevelToWrite, 0, filename, Bitmap::FileFormat::PfmFile, Bitmap::ExportFlags::Uncompressed);
+    }
+
+    if (widget.button("Save Debug Tex"))
+    {
+        mSaveDebug = true;
     }
 
     widget.slider("LightIndex", lightIndexToWrite, 0, static_cast<int>(mpShadowMapTextures.size()) - 1);
@@ -215,7 +229,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         pBufLayout->addElement("RADIUSSIZE", 0, ResourceFormat::R32Float, 1, 0);    //radius
         pBufLayout->addElement("LIGHTINDEX", 1 * sizeof(float), ResourceFormat::R16Uint, 1, 1);    //lightindex
         pLayout->addBufferLayout(0, pBufLayout);
-                
+
 
         Vao::BufferVec buffers{ pVB };
         mpLightsVao = Vao::create(Vao::Topology::PointList, pLayout, buffers);
@@ -282,6 +296,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
         defines.add("TILE_WIDTH", std::to_string(tileWidth));
         defines.add("TILE_HEIGHT", std::to_string(tileHeight));
+        defines.add("MIPCOUNT", std::to_string(mpShadowMapTextures[0]->getMipCount()));
 
         mpProgram = GraphicsProgram::create(desc, defines);
         mpState->setProgram(mpProgram);
