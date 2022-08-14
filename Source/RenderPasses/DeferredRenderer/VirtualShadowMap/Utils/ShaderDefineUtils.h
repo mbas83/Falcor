@@ -64,7 +64,7 @@ static std::string getWriteToMipFunctionString(const uint32_t lightCount, const 
 // light i -> readDepth(i,mipLevel,coords)
 static std::string getReadFromMipFunctionString(const uint32_t lightCount, const uint32_t mipCount)
 {
-    std::string s("float readDepth" + std::to_string(lightCount) + "(uint lightIndex, int mipLevel, uint2 coords){switch(lightIndex){");
+    std::string s("float readDepth(uint lightIndex, int mipLevel, uint2 coords){switch(lightIndex){");
 
     for (uint32_t lightIndex = 0; lightIndex < lightCount; ++lightIndex)
     {

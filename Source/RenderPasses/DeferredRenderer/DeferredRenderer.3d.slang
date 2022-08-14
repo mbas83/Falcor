@@ -130,8 +130,9 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     float4 out_color;
 
     int2 pixelCoord = gsOut.posH.xy;
+    uint lightIndex = gsOut.index;
 
-    const LightData light = gScene.getLight(gsOut.index);
+    const LightData light = gScene.getLight(lightIndex);
     float3 lightPosW = light.posW;
 
     float3 diffuseColor = gDiffuse[pixelCoord].rgb;
@@ -161,7 +162,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     float3 eyeRay = worldPosW - eyePos;
 
 
-    // Using usual RayDiffs
+    // Using usual RayDiffs (TODO: or use raygems ch.20 g-buffer version?)
     float3 dDdx, dDdy;
     // calculate intial raydiff (eq. 8)
 
@@ -179,14 +180,8 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     RayDiff newRayDiff = rayDiff.propagate(rayOrg, rayDir, primaryHitT, normal);
 
-    // ray tracing gems ch.20 ray diffs with g-buffer
-
-
-
-
     uint2 resolution;
     resolution = getMipDimensions(0);
-
 
     // calc the two positions at hit point
     float3 hitPointDx1 = worldPosW  + newRayDiff.getdOdx() / 2;
@@ -194,7 +189,6 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     // for dy
     float3 hitPointDy1 = worldPosW  + newRayDiff.getdOdy() / 2;
     float3 hitPointDy2 = worldPosW  - newRayDiff.getdOdy() / 2;
-
 
     float2 shadowCoordsDx1 = world_to_latlong_map(normalize(hitPointDx1 - lightPosW)) * resolution;
     float2 shadowCoordsDx2 = world_to_latlong_map(normalize(hitPointDx2 - lightPosW)) * resolution;
@@ -205,53 +199,67 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     float2 ShadowCoordDx = abs(shadowCoordsDx1 - shadowCoordsDx2);
     float2 ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2);
 
-    float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,MIPCOUNT);
-       
 
+    float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy), 0, MIPCOUNT);
+       
+    
     // Update Resolution to chosen mipmap level
-    //resolution = getMipDimensions(int(mipLevel));
+    resolution = getMipDimensions(int(mipLevel));
     float2 shadowMapCoord = world_to_latlong_map(-direction) * resolution;
     // ray should always go through center of the shadow map pixel
     float3 pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);
+        
 
+    float shadowFactor = 1.0f;
+    float bias = max(gDepthBias * (1.0f - dot(normal, pixel_centered_dir)), 0.01f);
 
-    // create shadow depth ray from light pos to fragment world pos
-    // Ray(origin,  dir,  tMin = 0.f, float tMax = FLT_MAX)
-    float3 origin = lightPosW;
-    float3 dir = normalize(worldPosW - lightPosW);
-    Ray ray = Ray(origin, dir, 1.0e-4);
+    float currentDepth = dist;
+    //float closestDepth = 0.f;
+    float closestDepth = readDepth(lightIndex, int(mipLevel), shadowMapCoord);
 
-    SceneRayQuery<0> sceneRayQuery;
-    HitInfo hit;
-    float hitT;
-    float closestDepth = 0.f;
-    uint flags = RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES;
-
-
-    if (sceneRayQuery.traceRay(ray, hit, hitT, flags, 0xff))
+    if(closestDepth > 0.0f)
     {
-        // hitT == depth from light
-        closestDepth = hitT;
+        if(currentDepth - bias > closestDepth){
+            shadowFactor = 0.0f;
+        }
     }
     else
     {
-        closestDepth = float(1e+38f);
-    }
+        // create shadow depth ray from light pos to fragment world pos
+        // Ray(origin,  dir,  tMin = 0.f, float tMax = FLT_MAX)
+        float3 origin = lightPosW;
+        float3 dir = pixel_centered_dir;
+        Ray ray = Ray(origin, dir, 1.0e-4);
 
-    float shadowFactor = 1.0f;
-    float bias = max(gDepthBias * (1.0f - dot(normal, dir)), 0.01f);
+        SceneRayQuery<0> sceneRayQuery;
+        HitInfo hit;
+        float hitT;
+        float closestDepth = 0.f;
+        uint flags = RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES;
 
-    float currentDepth = dist;
-    if(currentDepth - bias > closestDepth){
-        shadowFactor = 0.0f;
+        if (sceneRayQuery.traceRay(ray, hit, hitT, flags, 0xff))
+        {
+            // hitT == depth from light
+            closestDepth = hitT;
+        }
+        else
+        {
+            closestDepth = float(1e+38f);
+        }
+
+        // save to texture
+        //writeDepth(lightIndex, int(mipLevel), shadowMapCoord, closestDepth);
+
+        if(currentDepth - bias > closestDepth){
+            shadowFactor = 0.0f;
+        }
     }
 
     out_color *= shadowFactor;
 
-       
-    gDebug[pixelCoord] = float4(gMipColor[int(mipLevel)]);
-
     //writeFeedback(lightIndex, mipLevel, shadowMapCoord);
+
+    gDebug[pixelCoord] = float4(gMipColor[int(mipLevel)]);
 
     return out_color;
 }
