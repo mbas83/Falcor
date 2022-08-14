@@ -1,6 +1,7 @@
 import Scene.RaytracingInline;
 import Utils.Math.Ray;
 import Utils.Math.MathHelpers;
+import Rendering.Materials.TexLODHelpers;
 
 import RenderPasses.ShadowRayCache.Helper;
 
@@ -24,6 +25,7 @@ WRITE_FEEDBACK_FUNC
 cbuffer PerFrameCB
 {
     float gDepthBias;
+    float2 viewportDims;
 };
 
 struct VsIn{
@@ -80,31 +82,29 @@ void gsMain(point VsOut input[1], inout TriangleStream<GsOut> outStream)
     float3 t = normalize(cross(float3(0,1,0), n));
     float3 b = normalize(cross(n,t));
 
+    // move billboard center along view direction
+    float4 billboard_center  = float4(lightPosW - (n * radius),1.f);
 
-    //gScene.camera
-    float3 billboard_behind = lightPosW - (n * radius);
-
-    float4 center_pos = mul(float4(billboard_behind,1.f), gScene.camera.data.viewMat);
-        
-
+    //float4 center_pos = mul(float4(billboard_center,1.f), gScene.camera.data.viewMat);
+      
     // vertex 0
-    float4 newPos = center_pos - radius*float4(t,0) - radius*float4(b,0) ;
-    gsOut.posH = mul(newPos,gScene.camera.data.projMat);
+    float4 newPos = billboard_center - radius*float4(t,0) - radius*float4(b,0) ;
+    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMatNoJitter);
     outStream.Append(gsOut);
 
     // vertex 1
-    newPos = center_pos + radius*float4(t,0) - radius*float4(b,0);
-    gsOut.posH = mul(newPos,gScene.camera.data.projMat);
+    newPos = billboard_center + radius*float4(t,0) - radius*float4(b,0);
+    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMatNoJitter);
     outStream.Append(gsOut);
 
     // vertex 2
-    newPos = center_pos - radius*float4(t,0) + radius*float4(b,0);
-    gsOut.posH = mul(newPos,gScene.camera.data.projMat);
+    newPos = billboard_center - radius*float4(t,0) + radius*float4(b,0);
+    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMatNoJitter);
     outStream.Append(gsOut);
 
     // vertex 3
-    newPos = center_pos + radius*float4(t,0) + radius*float4(b,0);
-    gsOut.posH = mul(newPos,gScene.camera.data.projMat);
+    newPos = billboard_center + radius*float4(t,0) + radius*float4(b,0);
+    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMatNoJitter);
     outStream.Append(gsOut);
 
     outStream.RestartStrip();
@@ -128,7 +128,7 @@ RWTexture2D<float4> gDebug;
 float4 psMain(GsOut gsOut) : SV_TARGET0
 {
     float4 out_color;
-     
+
     int2 pixelCoord = gsOut.posH.xy;
 
     const LightData light = gScene.getLight(gsOut.index);
@@ -157,35 +157,43 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     // calc shadow
 
     // calc mipLevel
-    //const float4 texGrads = float4(ddx(sd.uv), ddy(sd.uv));
-
-
-    // ray tracing gems ch.20 ray diffs with g-buffer
     float3 eyePos = gScene.camera.data.posW;
     float3 eyeRay = worldPosW - eyePos;
 
-    float3 e00 = normalize(eyeRay); float t00 = length(eyeRay);
 
-    // +1 in x direction
-    eyeRay = gWorldPos[pixelCoord + int2(1,0)].xyz - eyePos;
-    float3 e10 = normalize(eyeRay); float t10 = length(eyeRay);
+    // Using usual RayDiffs
+    float3 dDdx, dDdy;
+    // calculate intial raydiff (eq. 8)
 
-    // +1 in y-direction
-    eyeRay = gWorldPos[pixelCoord + int2(0,1)].xyz - eyePos;
-    float3 e01 = normalize(eyeRay); float t01 = length(eyeRay);
+    float2 p = (pixelCoord.xy + float2(0.5f, 0.5f)) / viewportDims.xy; // Pixel center on image plane in [0,1] where (0,0) is top-left
+    float2 ndc = float2(2, -2) * p + float2(-1, 1);
+    float3 nonNormalizedRayDir =  ndc.x * gScene.camera.data.cameraU + ndc.y * gScene.camera.data.cameraV + gScene.camera.data.cameraW; // rayDir = world-space direction to point on image plane (unnormalized)
 
-    float3 dOdx = t10 * e10 - t00 * e00;
-    float3 dOdy = t10 * e01 - t00 * e00;
+    computeRayDirectionDifferentials(nonNormalizedRayDir, gScene.camera.data.cameraU, gScene.camera.data.cameraV, pixelCoord, dDdx, dDdy);
+
+    RayDiff rayDiff = RayDiff(float3(0.f), float3(0.f), dDdx, dDdy);
+
+    float3 rayOrg = eyePos;
+    float3 rayDir = normalize(eyeRay);
+    float primaryHitT = length(eyeRay);
+
+    RayDiff newRayDiff = rayDiff.propagate(rayOrg, rayDir, primaryHitT, normal);
+
+    // ray tracing gems ch.20 ray diffs with g-buffer
+
+
+
 
     uint2 resolution;
     resolution = getMipDimensions(0);
 
+
     // calc the two positions at hit point
-    float3 hitPointDx1 = worldPosW  + dOdx / 2;
-    float3 hitPointDx2 = worldPosW  - dOdx / 2;
+    float3 hitPointDx1 = worldPosW  + newRayDiff.getdOdx() / 2;
+    float3 hitPointDx2 = worldPosW  - newRayDiff.getdOdx() / 2;
     // for dy
-    float3 hitPointDy1 = worldPosW  + dOdy / 2;
-    float3 hitPointDy2 = worldPosW  - dOdy / 2;
+    float3 hitPointDy1 = worldPosW  + newRayDiff.getdOdy() / 2;
+    float3 hitPointDy2 = worldPosW  - newRayDiff.getdOdy() / 2;
 
 
     float2 shadowCoordsDx1 = world_to_latlong_map(normalize(hitPointDx1 - lightPosW)) * resolution;
@@ -198,11 +206,10 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     float2 ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2);
 
     float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,MIPCOUNT);
-
-    mipLevel = calcLod(ShadowCoordDx, ShadowCoordDy);
+       
 
     // Update Resolution to chosen mipmap level
-    resolution = getMipDimensions(int(mipLevel));
+    //resolution = getMipDimensions(int(mipLevel));
     float2 shadowMapCoord = world_to_latlong_map(-direction) * resolution;
     // ray should always go through center of the shadow map pixel
     float3 pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);
@@ -242,7 +249,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     out_color *= shadowFactor;
 
        
-    gDebug[pixelCoord] = float4(mipLevel);
+    gDebug[pixelCoord] = float4(gMipColor[int(mipLevel)]);
 
     //writeFeedback(lightIndex, mipLevel, shadowMapCoord);
 
