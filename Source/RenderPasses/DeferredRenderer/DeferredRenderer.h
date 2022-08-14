@@ -93,4 +93,11 @@ private:
 
 
     bool mSaveDebug = false;
+
+    // name of texture in shader for binding
+    std::vector<std::vector<std::string>> mpShadowMapBindStrings;
+    std::vector<std::vector<std::string>> mpFeedbackMapBindStrings;
+
+    void createTextureBindStrings();
+
 };

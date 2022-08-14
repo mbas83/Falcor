@@ -123,14 +123,15 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     mpVars["gDebug"] = renderData[kDebug]->asTexture();
 
     mpVars["PerFrameCB"]["gDepthBias"] = mDepthBias;
+    mpVars["PerFrameCB"]["viewportDims"] = float2(mpFbo->getWidth(), mpFbo->getHeight());
 
-    /*
+
 
     // bind all mip uavs for all ligh ts
     for (uint lightIndex = 0; lightIndex < mpScene->getActiveLightCount(); ++lightIndex)
     {
         for (uint mipLevel = 0; mipLevel < mpShadowMapTextures[0]->getMipCount(); ++mipLevel) {
-            mpVars["gShadowMap" + std::to_string(lightIndex) + "_" + std::to_string(mipLevel)].setUav(mpShadowMapTextures[lightIndex]->getUAV(mipLevel));
+            mpVars[mpShadowMapBindStrings[lightIndex][mipLevel]].setUav(mpShadowMapTextures[lightIndex]->getUAV(mipLevel));
         }
     }
 
@@ -139,9 +140,9 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     {
         // feedback only for standard packed mips
         for (uint mipLevel = 0; mipLevel < mpShadowMapTextures[0]->getPackedMipInfo().NumStandardMips; ++mipLevel) {
-            mpVars["gFeedbackMip" + std::to_string(lightIndex) + "_" + std::to_string(mipLevel)].setUav(mpFeedbackTextures[lightIndex]->getUAV(mipLevel));
+            mpVars[mpFeedbackMapBindStrings[lightIndex][mipLevel]].setUav(mpFeedbackTextures[lightIndex]->getUAV(mipLevel));
         }
-    }*/
+    }
 
     // bind mip color texture
     mpVars["gMipColor"] = mipColorTex->asTexture();
@@ -298,6 +299,8 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         defines.add("TILE_HEIGHT", std::to_string(tileHeight));
         defines.add("MIPCOUNT", std::to_string(mpShadowMapTextures[0]->getMipCount()));
 
+        createTextureBindStrings();
+
         mpProgram = GraphicsProgram::create(desc, defines);
         mpState->setProgram(mpProgram);
 
@@ -332,4 +335,42 @@ DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), mDepthBias(0.05f)
 
 
     mpFbo = Fbo::create();
+}
+
+void DeferredRenderer::createTextureBindStrings()
+{
+    mpShadowMapBindStrings.resize(mpShadowMapTextures.size());
+    for (auto& mipStrings : mpShadowMapBindStrings)
+    {
+        mipStrings.resize(mpShadowMapTextures[0]->getMipCount());
+    }
+
+
+    // bind strings for shadow tex mips
+    for (uint lightIndex = 0; lightIndex < mpShadowMapTextures.size(); ++lightIndex)
+    {
+        for (uint mipLevel = 0; mipLevel < mpShadowMapTextures[0]->getMipCount(); ++mipLevel)
+        {
+            mpShadowMapBindStrings[lightIndex][mipLevel] = std::string("gShadowMap" + std::to_string(lightIndex) + "_" + std::to_string(mipLevel));
+        }
+    }
+
+    mpFeedbackMapBindStrings.resize(mpFeedbackTextures.size());
+    for (auto& mipStrings : mpFeedbackMapBindStrings)
+    {
+        mipStrings.resize(mpFeedbackTextures[0]->getMipCount());
+    }
+
+    // bind strings for feedback tex mips
+    for (uint lightIndex = 0; lightIndex < mpFeedbackTextures.size(); ++lightIndex)
+    {
+        for (uint mipLevel = 0; mipLevel < mpFeedbackTextures[0]->getMipCount(); ++mipLevel)
+        {
+            mpFeedbackMapBindStrings[lightIndex][mipLevel] = std::string("gFeedbackMip" + std::to_string(lightIndex) + "_" + std::to_string(mipLevel));
+        }
+    }
+
+
+
+
 }
