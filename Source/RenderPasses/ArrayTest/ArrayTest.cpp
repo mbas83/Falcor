@@ -38,6 +38,11 @@ namespace
     const uint32_t kMaxPayloadSizeBytes = 164;
     const uint32_t kMaxRecursionDepth = 2;
 
+    const ChannelList kOutputChannels =
+    {
+        { "output",   "gOutput","Output color",    true /* optional */, ResourceFormat::RGBA32Float },
+    };
+
 
 }
 
@@ -67,31 +72,45 @@ RenderPassReflection ArrayTest::reflect(const CompileData& compileData)
 {
     // Define the required resources here
     RenderPassReflection reflector;
-    reflector.addOutput("output", "Output texture");
+    addRenderPassOutputs(reflector, kOutputChannels);
 
     return reflector;
 }
 
 void ArrayTest::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
-    pRenderContext->clearTexture(renderData["output"]->asTexture().get());
+    for (const auto& channel : kOutputChannels)
+    {
+        pRenderContext->clearTexture(renderData[channel.name]->asTexture().get());
+    }
 
     if (!mpScene) return;
 
     if (!mpVars) prepareVars();
 
-    mpVars["gOutput"] = renderData["output"]->asTexture();
-
     // Get dimensions of ray dispatch.
     const uint2 targetDim = renderData.getDefaultTextureDims();
     assert(targetDim.x > 0 && targetDim.y > 0);
 
+    // Bind I/O buffers. These needs to be done per-frame as the buffers may change anytime.
+    auto bind = [&](const ChannelDesc& desc)
+    {
+        if (!desc.texname.empty())
+        {
+            auto pGlobalVars = mpVars->getRootVar();
+            pGlobalVars[desc.texname] = renderData[desc.name]->asTexture();
+        }
+    };
+
+    for (const auto& channel : kOutputChannels) bind(channel);
+
+
     // bind texs into array
     for (uint i = 0; i < mpTexture->getMipCount(); ++i)
     {
-        mpVars["gWriteTestTextures"][i] = mpTexture->getUAV(i);
+        mpVars["gWriteTestTextures"][i].setUav(mpTexture->getUAV(i));
     }
-    
+
     mpScene->raytrace(pRenderContext, mpProgram.get(), mpVars, uint3(targetDim, 1));
 }
 
@@ -111,6 +130,13 @@ void ArrayTest::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& 
     mpScene = pScene;
 
     recreateVars();
+
+    mpTexture = Texture::create2D(4096, 4096, ResourceFormat::R32Float, 1, maxMips, nullptr, ResourceBindFlags::UnorderedAccess | ResourceBindFlags::ShaderResource);
+
+    for (uint i = 0; i < mpTexture->getMipCount(); ++i)
+    {
+        auto test = mpTexture->getUAV(i);
+    }
 
     //create test tex with mips
     RtProgram::Desc progDesc;
@@ -134,20 +160,23 @@ void ArrayTest::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& 
         auto typeConformances = pScene->getMaterialSystem()->getTypeConformances(materialType);
 
         auto primaryShaderID = progDesc.addHitGroup("PrimaryClosestHit", "PrimaryAnyHit", "", typeConformances, to_string(materialType));
-                
+
+        auto shadowShaderID = progDesc.addHitGroup("ShadowClosestHit", "ShadowAnyHit", "", typeConformances, to_string(materialType));
+
         auto geometryIDs = pScene->getGeometryIDs(Scene::GeometryType::TriangleMesh, materialType);
 
         sbt->setHitGroup(0, geometryIDs, primaryShaderID);
-
+        sbt->setHitGroup(1, geometryIDs, shadowShaderID);
     }
     Program::DefineList defines;
     defines.add(mpScene->getSceneDefines());
+    defines.add("MIPCOUNT", std::to_string(mpTexture->getMipCount()));
 
     mpProgram = RtProgram::create(progDesc, defines);
 
     assert(mpProgram);
 
-    mpTexture = Texture::create2D(4096,4096,ResourceFormat::R32Float,1,Resource::kMaxPossible,nullptr,ResourceBindFlags::UnorderedAccess);
+
 }
 
 void ArrayTest::prepareVars()

@@ -68,4 +68,6 @@ private:
     int mipLevelToWrite = 0;
 
     Texture::SharedPtr mpTexture;
+
+    const uint maxMips = 6;
 };

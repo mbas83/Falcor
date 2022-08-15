@@ -15,7 +15,7 @@ import Rendering.Lights.LightHelpers;
 
 RWTexture2D<float4> gOutput;
 
-RWTexture2D<float4> gWriteTestTextures[];
+RWTexture2D<float> gWriteTestTextures[(uint)MIPCOUNT];
 
 // safe absolute fraction abs(n/d)
 float sAbsFrac(float n, float d)
@@ -44,6 +44,33 @@ float calcLod(float2 dX, float2 dY)
     
     return log2(max(lengthX,lengthY));
 }
+
+uint2 getMipDimensions(uint mipLevel){
+    uint2 resolution = uint2(0,0);
+
+    switch(mipLevel){
+        case 0:
+            resolution = uint2(4096,4096);
+            break;
+        case 1:
+            resolution = uint2(2048,2048);
+            break;
+        case 2:
+            resolution = uint2(1024,1024);
+            break;
+        case 3:
+            resolution = uint2(512,512);
+            break;
+        case 4:
+            resolution = uint2(256,256);
+            break;
+        case 5:
+            resolution = uint2(128,128);
+            break;
+    }
+    return resolution;
+}
+
 
 // payload for primary ray
 struct PrimaryRayPayload {
@@ -145,7 +172,8 @@ void PrimaryClosestHit(inout PrimaryRayPayload rayData: SV_RayPayload, BuiltInTr
     ITextureSampler lod = ExplicitRayDiffsIsotropicTextureSampler(dUVdx, dUVdy);
     ShadingData shadeData = gScene.materials.prepareShadingData(v, materialID, -rayDir, lod);
 
-    uint2 resolution;resolution = getMipDimensions(0);
+    uint2 resolution;
+    resolution = getMipDimensions(0);
     float3 hitPointDx1 = shadeData.posW  + newRayDiff.getdOdx() / 2; float3 hitPointDx2 = shadeData.posW  - newRayDiff.getdOdx() / 2; 
     float3 hitPointDy1 = shadeData.posW  + newRayDiff.getdOdy() / 2; float3 hitPointDy2 = shadeData.posW  - newRayDiff.getdOdy() / 2; 
     LightData lightData =  gScene.getLight(0);
@@ -161,23 +189,78 @@ void PrimaryClosestHit(inout PrimaryRayPayload rayData: SV_RayPayload, BuiltInTr
     float2 shadowCoordsDy2 = world_to_latlong_map(normalize(hitPointDy2 - lightPos)) * resolution;
     float2 ShadowCoordDx = abs(shadowCoordsDx1 - shadowCoordsDx2);
     float2 ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2);
-    float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,8);
+    float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,MIPCOUNT);
     resolution = getMipDimensions(int(mipLevel));
     float2 shadowMapCoord = world_to_latlong_map(toHitPos) * resolution;
     float3 pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);
+
+    // shoot depth ray
+    float closestDepth = depthRay(lightPos, pixel_centered_dir, 0, 1e+38f);
 
 
     float NdotL = saturate(dot(shadeData.N, toLight));
     IBSDF bsdf = gScene.materials.getBSDF(shadeData, lod);
     BSDFProperties bsdfProperties = bsdf.getProperties(shadeData);
     float shininess = 10.0;
-    outColor += shadowFactor * (bsdfProperties.diffuseReflectionAlbedo + (pow(NdotL, shininess) * bsdfProperties.specularReflectionAlbedo)) * M_1_PI * lightIntensity;
+    float3 outColor = (bsdfProperties.diffuseReflectionAlbedo + (pow(NdotL, shininess) * bsdfProperties.specularReflectionAlbedo)) * M_1_PI * lightIntensity;
 
 
     uint mipIndex = (uint)mipLevel;
     // TEST WRITE just test mip
-    gWriteTestTextures[NonUniformResourceIndex(mipIndex)];
+    gWriteTestTextures[NonUniformResourceIndex(mipIndex)][shadowMapCoord] = 42;
 
 
     gOutput[launchIndex] = float4(outColor, shadeData.opacity);
+}
+
+
+//***************** Hit Group 1: Depth Ray *********************************************************************************
+
+struct DepthRayPayload
+{
+	float depth;  // Saves position of hit in world space
+};
+
+// Trace shadow from light to hitpos and return depth of first hit
+float depthRay(float3 origin, float3 direction, float minT, float maxT)
+{
+	// Setup our shadow ray
+	RayDesc ray;
+	ray.Origin = origin;        // Where does it start?
+	ray.Direction = direction;  // What direction do we shoot it?
+	ray.TMin = minT;            // The closest distance we'll count as a hit
+	ray.TMax = maxT;            // The farthest distance we'll count as a hit
+
+	DepthRayPayload payload = { float(1e+38f) };
+
+	// Query if anything is between the current point and the light
+	TraceRay(gScene.rtAccel,
+		RAY_FLAG_NONE,
+		0xFF, 1, rayTypeCount, 1, ray, payload);
+
+
+	// Return depth from light position
+	return payload.depth;
+}
+
+
+[shader("miss")]
+void ShadowMiss(inout DepthRayPayload rayData)
+{
+}
+
+[shader("anyhit")]
+void ShadowAnyHit(inout DepthRayPayload : SV_RayPayload, BuiltInTriangleIntersectionAttributes attribs : SV_IntersectionAttributes)
+{
+    GeometryInstanceID instanceID = getGeometryInstanceID();
+    VertexData v = getVertexData(instanceID, PrimitiveIndex(), attribs);
+    const uint materialID = gScene.getMaterialID(instanceID);
+    if (gScene.materials.alphaTest(v, materialID, 0.f)) IgnoreHit();
+}   
+
+
+[shader("closesthit")]
+void ShadowClosestHit(inout DepthRayPayload rayData : SV_RayPayload, BuiltInTriangleIntersectionAttributes attribs : SV_IntersectionAttributes)
+{
+    rayData.depth = RayTCurrent();
 }
