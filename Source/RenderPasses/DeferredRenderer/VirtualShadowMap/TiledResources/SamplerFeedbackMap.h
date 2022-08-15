@@ -1,3 +1,4 @@
+/*
 #pragma once
 
 #include <memory>
@@ -56,3 +57,4 @@ namespace Falcor {
         friend class Device;
     };
 }
+*/

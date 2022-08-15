@@ -227,7 +227,7 @@ void PrimaryClosestHit(inout PrimaryRayPayload rayData: SV_RayPayload, BuiltInTr
     float shininess = 10.0;
     float3 outColor = shadowFactor * (bsdfProperties.diffuseReflectionAlbedo + (pow(NdotL, shininess) * bsdfProperties.specularReflectionAlbedo)) * M_1_PI * lightIntensity;
 
-
+      
     // TEST WRITE just test mip
     
 

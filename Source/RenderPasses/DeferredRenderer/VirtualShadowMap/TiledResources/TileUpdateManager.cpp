@@ -272,11 +272,16 @@ namespace Falcor {
         }
 
 
-        // Map packed mips dor each shadow map
+        // Map packed mips for each shadow map
         for (uint shadowMapIndex = 0; shadowMapIndex < mNumShadowMaps; ++shadowMapIndex) {
 
             // start at first packed mip subresource, region size is then number of packed mips
             auto numPackedMipTiles = mShadowMaps[shadowMapIndex]->getPackedMipInfo().NumTilesForPackedMips;
+            if(numPackedMipTiles <= 0)
+            {
+                continue;
+            }
+
             D3D12_TILED_RESOURCE_COORDINATE packedMipStartCoordinate{ 0,0,0,mNumStandardMips };
             D3D12_TILE_REGION_SIZE packedMipSize{ numPackedMipTiles, false, 0,0,0 };
 

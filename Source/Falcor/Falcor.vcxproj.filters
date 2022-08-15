@@ -690,30 +690,6 @@
     <ClInclude Include="Rendering\RTXGI\RTXGIVolume.h">
       <Filter>Rendering\RTXGI</Filter>
     </ClInclude>
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\Utils\d3dx12.h">
-      <Filter>RenderPasses\Shared\VirtualShadowMap\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\Utils\MipColorData.h">
-      <Filter>RenderPasses\Shared\VirtualShadowMap\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\Utils\ShaderDefineUtils.h">
-      <Filter>RenderPasses\Shared\VirtualShadowMap\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\FeedbackTexture.h">
-      <Filter>RenderPasses\Shared\VirtualShadowMap\TiledResources</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\HeapAllocationManager.h">
-      <Filter>RenderPasses\Shared\VirtualShadowMap\TiledResources</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\SamplerFeedbackMap.h">
-      <Filter>RenderPasses\Shared\VirtualShadowMap\TiledResources</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\TiledTexture.h">
-      <Filter>RenderPasses\Shared\VirtualShadowMap\TiledResources</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\TileUpdateManager.h">
-      <Filter>RenderPasses\Shared\VirtualShadowMap\TiledResources</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Core">
@@ -898,15 +874,6 @@
     </Filter>
     <Filter Include="Rendering\RTXGI">
       <UniqueIdentifier>{44daa05f-64e2-4689-a953-005853ed107a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="RenderPasses\Shared\VirtualShadowMap">
-      <UniqueIdentifier>{dd08938d-98e2-4254-b519-a8fd5184a007}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="RenderPasses\Shared\VirtualShadowMap\TiledResources">
-      <UniqueIdentifier>{57b9c929-f8db-4362-874b-8ea04461aff3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="RenderPasses\Shared\VirtualShadowMap\Utils">
-      <UniqueIdentifier>{8fde6101-1977-4553-8ae9-753b6c534926}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1621,21 +1588,6 @@
     </ClCompile>
     <ClCompile Include="Rendering\RTXGI\RTXGISDK.cpp">
       <Filter>Rendering\RTXGI</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\FeedbackTexture.cpp">
-      <Filter>RenderPasses\Shared\VirtualShadowMap\TiledResources</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\HeapAllocationManager.cpp">
-      <Filter>RenderPasses\Shared\VirtualShadowMap\TiledResources</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\SamplerFeedbackMap.cpp">
-      <Filter>RenderPasses\Shared\VirtualShadowMap\TiledResources</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\TiledTexture.cpp">
-      <Filter>RenderPasses\Shared\VirtualShadowMap\TiledResources</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\TileUpdateManager.cpp">
-      <Filter>RenderPasses\Shared\VirtualShadowMap\TiledResources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

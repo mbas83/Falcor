@@ -90,7 +90,8 @@ private:
     // for writing texture to file
     int lightIndexToWrite = 0;
     int mipLevelToWrite = 0;
-
+    uint numLights;
+    uint numShadowMips;
 
     bool mSaveDebug = false;
 

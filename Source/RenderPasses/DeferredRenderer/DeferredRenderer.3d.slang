@@ -8,19 +8,18 @@ import RenderPasses.ShadowRayCache.Helper;
 // Defines for Shadow Map Access
 
 // used for definitions of shadow textures:
-SHADOW_TEXTURES
+//SHADOW_TEXTURES
 // used for definition of function: void writeToMip'lightIndex'(uint lightIndex, uint mipLevel, uint2 coords, float value)
-WRITE_TO_MIP_FUNC
+//WRITE_TO_MIP_FUNC
 // used for definition of function: float readFromMip'lightIndex'(uint lightIndex, uint mipLevel, uint2 coords)
-READ_FROM_MIP_FUNC
+//READ_FROM_MIP_FUNC
 // used for definition of function: uint2 getMipDimensions(uint mipLevel) 
-GET_MIP_DIMENSIONS_FUNC
+//GET_MIP_DIMENSIONS_FUNC
 
 // Feedback Map: gFeedbackMip'lightIndex'_'mipLevel';
-FEEDBACK_TEXTURES
+//FEEDBACK_TEXTURES
 // function to write feedback: void writeFeedback(uint lightIndex, uint mipLevel, uint2 coordinate)
-WRITE_FEEDBACK_FUNC
-
+//WRITE_FEEDBACK_FUNC
 
 cbuffer PerFrameCB
 {
@@ -112,6 +111,12 @@ void gsMain(point VsOut input[1], inout TriangleStream<GsOut> outStream)
 }
 
 
+
+// Virtual Shadow Maps
+RWTexture2D<float> gVirtualShadowMaps[(uint)SHADOWTEXTURECOUNT];
+// Feedback Maps
+RWTexture2D<float> gFeedbackMaps[(uint)FEEDBACKTEXTURECOUNT];
+
 // GBuffer
 Texture2D<float4> gWorldPos;
 Texture2D<float4> gWorldNormal;
@@ -181,7 +186,9 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     RayDiff newRayDiff = rayDiff.propagate(rayOrg, rayDir, primaryHitT, normal);
 
     uint2 resolution;
-    resolution = getMipDimensions(0);
+    // get dimensions of mip0
+    gVirtualShadowMaps[0].GetDimensions(resolution.x,resolution.y);
+    //resolution = getMipDimensions(0);
 
     // calc the two positions at hit point
     float3 hitPointDx1 = worldPosW  + newRayDiff.getdOdx() / 2;
@@ -200,11 +207,12 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     float2 ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2);
 
 
-    float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy), 0, MIPCOUNT);
+    uint mipLevel = (uint) clamp( calcLod(ShadowCoordDx, ShadowCoordDy), 0, MIPCOUNT);
        
     
     // Update Resolution to chosen mipmap level
-    resolution = getMipDimensions(int(mipLevel));
+    //resolution = getMipDimensions(mipLevel);
+    gVirtualShadowMaps[NonUniformResourceIndex(LIGHTCOUNT*lightIndex+mipLevel)].GetDimensions(resolution.x,resolution.y);
     float2 shadowMapCoord = world_to_latlong_map(-direction) * resolution;
     // ray should always go through center of the shadow map pixel
     float3 pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);
@@ -215,7 +223,12 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     float currentDepth = dist;
     //float closestDepth = 0.f;
-    float closestDepth = readDepth(lightIndex, int(mipLevel), shadowMapCoord);
+    //float closestDepth = readDepth(lightIndex, mipLevel, shadowMapCoord);
+
+    const uint shadowTexArrayIndex = MIPCOUNT * lightIndex + mipLevel;
+    float closestDepth = gVirtualShadowMaps[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord];
+
+
 
     if(closestDepth > 0.0f)
     {
@@ -248,7 +261,8 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
         }
 
         // save to texture
-        //writeDepth(lightIndex, int(mipLevel), shadowMapCoord, closestDepth);
+        //writeDepth(lightIndex, mipLevel, shadowMapCoord, closestDepth);
+        gVirtualShadowMaps[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord] = closestDepth;
 
         if(currentDepth - bias > closestDepth){
             shadowFactor = 0.0f;
@@ -257,9 +271,12 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     out_color *= shadowFactor;
 
-    //writeFeedback(lightIndex, mipLevel, shadowMapCoord);
+    // assumes no packed mips
+    uint feedbackTexArrayIndex = lightIndex * MIPCOUNT + mipLevel;
+    gFeedbackMaps[NonUniformResourceIndex(feedbackTexArrayIndex)][shadowMapCoord] = 0xFF;
 
-    gDebug[pixelCoord] = float4(gMipColor[int(mipLevel)]);
+
+    gDebug[pixelCoord] = float4(gMipColor[mipLevel]);
 
     return out_color;
 }

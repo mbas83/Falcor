@@ -128,19 +128,20 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
 
 
     // bind all mip uavs for all ligh ts
-    for (uint lightIndex = 0; lightIndex < mpScene->getActiveLightCount(); ++lightIndex)
+    for (uint lightIndex = 0; lightIndex < numLights; ++lightIndex)
     {
-        for (uint mipLevel = 0; mipLevel < mpShadowMapTextures[0]->getMipCount(); ++mipLevel) {
-            mpVars[mpShadowMapBindStrings[lightIndex][mipLevel]].setUav(mpShadowMapTextures[lightIndex]->getUAV(mipLevel));
+        for (uint mipLevel = 0; mipLevel < numShadowMips; ++mipLevel) {
+            // index = numMips*lightIndex + mipLevel
+            mpVars["gVirtualShadowMaps"][lightIndex * numShadowMips + mipLevel].setUav(mpShadowMapTextures[lightIndex]->getUAV(mipLevel));
         }
     }
 
     // bind all feedback texture standard mip uavs
-    for (uint lightIndex = 0; lightIndex < mpScene->getActiveLightCount(); ++lightIndex)
+    for (uint lightIndex = 0; lightIndex < numLights; ++lightIndex)
     {
         // feedback only for standard packed mips
         for (uint mipLevel = 0; mipLevel < mpShadowMapTextures[0]->getPackedMipInfo().NumStandardMips; ++mipLevel) {
-            mpVars[mpFeedbackMapBindStrings[lightIndex][mipLevel]].setUav(mpFeedbackTextures[lightIndex]->getUAV(mipLevel));
+            mpVars["gFeedbackMaps"][lightIndex * mpShadowMapTextures[0]->getPackedMipInfo().NumStandardMips + mipLevel].setUav(mpFeedbackTextures[lightIndex]->getUAV(mipLevel));
         }
     }
 
@@ -206,7 +207,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         defines.add(pScene->getSceneDefines());
 
         // create light vertex attributes
-        const auto numLights = mpScene->getActiveLightCount();
+        numLights = mpScene->getActiveLightCount();
         std::vector<PointLightVertex> pointLights;
 
         const auto sceneLights = mpScene->getActiveLights();
@@ -257,22 +258,26 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
         // TODO: move VSM init to other file?
 
+        constexpr uint maxMipCount = 6;
+
         // create a tiled tex and feedback map for every light
         for (uint i = 0; i < numLights; ++i)
         {
-            auto shadowMap = TiledTexture::create2DTiled(shadowMapWidth, shadowMapHeight, ResourceFormat::R32Float);
+            auto shadowMap = TiledTexture::create2DTiled(shadowMapWidth, shadowMapHeight, ResourceFormat::R32Float, 1, maxMipCount);
             pRenderContext->clearTextureAndAllMips(shadowMap.get());
             uint tileWidth = shadowMap->getTileTexelWidth();
             uint tileHeight = shadowMap->getTileTexelHeight();
             mpShadowMapTextures.push_back(shadowMap);
 
-            auto feedbackTex = FeedbackTexture::createFeedbackTexture(shadowMapWidth, shadowMapHeight, tileWidth, tileHeight);
+            auto feedbackTex = FeedbackTexture::createFeedbackTexture(shadowMapWidth, shadowMapHeight, tileWidth, tileHeight,maxMipCount);
             for (uint mipIndex = 0; mipIndex < feedbackTex->getMipCount(); ++mipIndex)
             {
                 pRenderContext->clearUAV(feedbackTex->getUAV(mipIndex).get(), uint4(0));
             }
             mpFeedbackTextures.push_back(feedbackTex);
         }
+
+        // assume no packed mips because feedback texture access in shader relies on it
 
         // heapsize (in tiles) for shadow maps
         uint heapsize = numLights * mpShadowMapTextures[0]->getNumTilesTotal() / 2;
@@ -282,24 +287,32 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
 
         // add defines for shadow map access
-        const uint numMips = mpShadowMapTextures[0]->getMipCount();
+        numShadowMips = mpShadowMapTextures[0]->getMipCount();
         const uint tileWidth = mpShadowMapTextures[0]->getTileTexelWidth();
         const uint tileHeight = mpShadowMapTextures[0]->getTileTexelHeight();
         const uint numStandardMips = mpShadowMapTextures[0]->getPackedMipInfo().NumStandardMips;
 
-        defines.add("SHADOW_TEXTURES", getMipViewDefineString(numLights, numMips));
-        defines.add("WRITE_TO_MIP_FUNC", getWriteToMipFunctionString(numLights, numMips));
-        defines.add("READ_FROM_MIP_FUNC", getReadFromMipFunctionString(numLights, numMips));
-        defines.add("GET_MIP_DIMENSIONS_FUNC", mipDimensionsFunctionString(numMips));
 
-        defines.add("FEEDBACK_TEXTURES", getFeedbackViewDefineString(numLights, numStandardMips));
-        defines.add("WRITE_FEEDBACK_FUNC", getWriteFeedbackString(numLights, numStandardMips));
+        //defines.add("SHADOW_TEXTURES", getMipViewDefineString(numLights, numMips));
+        //defines.add("WRITE_TO_MIP_FUNC", getWriteToMipFunctionString(numLights, numMips));
+        //defines.add("READ_FROM_MIP_FUNC", getReadFromMipFunctionString(numLights, numMips));
+        //defines.add("GET_MIP_DIMENSIONS_FUNC", mipDimensionsFunctionString(numMips));
+
+        //defines.add("FEEDBACK_TEXTURES", getFeedbackViewDefineString(numLights, numStandardMips));
+        //defines.add("WRITE_FEEDBACK_FUNC", getWriteFeedbackString(numLights, numStandardMips));
 
         defines.add("TILE_WIDTH", std::to_string(tileWidth));
         defines.add("TILE_HEIGHT", std::to_string(tileHeight));
-        defines.add("MIPCOUNT", std::to_string(mpShadowMapTextures[0]->getMipCount()));
 
-        createTextureBindStrings();
+
+        defines.add("MIPCOUNT", std::to_string(numShadowMips));
+        defines.add("NUMSTANDARDMIPS", std::to_string(numStandardMips));
+        defines.add("LIGHTCOUNT", std::to_string(numLights));
+        defines.add("SHADOWTEXTURECOUNT", std::to_string(numLights * numShadowMips));
+        defines.add("FEEDBACKTEXTURECOUNT", std::to_string(numLights * numStandardMips));
+
+
+        //createTextureBindStrings();
 
         mpProgram = GraphicsProgram::create(desc, defines);
         mpState->setProgram(mpProgram);

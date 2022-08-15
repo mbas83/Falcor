@@ -1,3 +1,4 @@
+/*
 #include "stdafx.h"
 #include "SamplerFeedbackMap.h"
 
@@ -94,3 +95,4 @@ namespace Falcor
     }
 
 }
+*/

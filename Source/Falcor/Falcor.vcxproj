@@ -178,14 +178,6 @@
     <ClInclude Include="Rendering\Volumes\GridVolumeSampler.h" />
     <ClInclude Include="RenderPasses\ResolvePass.h" />
     <ClInclude Include="RenderPasses\Shared\PathTracer\PathTracer.h" />
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\FeedbackTexture.h" />
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\HeapAllocationManager.h" />
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\SamplerFeedbackMap.h" />
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\TiledTexture.h" />
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\TileUpdateManager.h" />
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\Utils\d3dx12.h" />
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\Utils\MipColorData.h" />
-    <ClInclude Include="RenderPasses\Shared\VirtualShadowMap\Utils\ShaderDefineUtils.h" />
     <ClInclude Include="Scene\Animation\Animatable.h" />
     <ClInclude Include="Scene\Animation\Animation.h" />
     <ClInclude Include="Scene\Animation\AnimationController.h" />
@@ -919,11 +911,6 @@
     <ClCompile Include="Rendering\Volumes\GridVolumeSampler.cpp" />
     <ClCompile Include="RenderPasses\ResolvePass.cpp" />
     <ClCompile Include="RenderPasses\Shared\PathTracer\PathTracer.cpp" />
-    <ClCompile Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\FeedbackTexture.cpp" />
-    <ClCompile Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\HeapAllocationManager.cpp" />
-    <ClCompile Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\SamplerFeedbackMap.cpp" />
-    <ClCompile Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\TiledTexture.cpp" />
-    <ClCompile Include="RenderPasses\Shared\VirtualShadowMap\TiledResources\TileUpdateManager.cpp" />
     <ClCompile Include="Scene\Animation\Animatable.cpp" />
     <ClCompile Include="Scene\Animation\Animation.cpp" />
     <ClCompile Include="Scene\Animation\AnimationController.cpp" />

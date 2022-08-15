@@ -30,7 +30,6 @@
 #include "Core/API/Texture.h"
 #include "Core/API/Buffer.h"
 #include "Core/API/Device.h"
-#include "RenderPasses/Shared/VirtualShadowMap/TiledResources/SamplerFeedbackMap.h"
 
 namespace Falcor
 {
@@ -530,6 +529,7 @@ namespace Falcor
         return SharedPtr(new UnorderedAccessView(pTexture, createUavDescriptor(desc, resHandle, nullptr), mipLevel, firstArraySlice, arraySize));
     }
 
+    /*
     UnorderedAccessView::SharedPtr UnorderedAccessView::create(ConstFeedbackMapSharedPtrRef pFeedbackMap, uint32_t mipLevel, uint32_t firstArraySlice, uint32_t arraySize)
     {
         FALCOR_ASSERT(pFeedbackMap);
@@ -540,7 +540,7 @@ namespace Falcor
         // copy descriptor from uav heap of SamplerFeedbackMap to the new Descriptor Heap
         gpDevice->getApiHandle()->CopyDescriptorsSimple(1, handle->getCpuHandle(0, 0), pFeedbackMap->getUavHeap()->GetCPUDescriptorHandleForHeapStart(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
         return SharedPtr(new UnorderedAccessView(pFeedbackMap, handle, mipLevel, firstArraySlice, arraySize));
-    }
+    }*/
 
     UnorderedAccessView::SharedPtr UnorderedAccessView::create(ConstBufferSharedPtrRef pBuffer, uint32_t firstElement, uint32_t elementCount)
     {
