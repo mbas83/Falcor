@@ -195,19 +195,41 @@ void PrimaryClosestHit(inout PrimaryRayPayload rayData: SV_RayPayload, BuiltInTr
     float3 pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);
 
     // shoot depth ray
-    float closestDepth = depthRay(lightPos, pixel_centered_dir, 0, 1e+38f);
+    uint mipIndex = (uint)mipLevel;
 
+    float shadowFactor = 1.0f;
+    float closestDepth = gWriteTestTextures[NonUniformResourceIndex(mipIndex)][shadowMapCoord];
+    float currentDepth =  ls.distance;
+
+    float bias = max(0.05f * (1.0 - dot(shadeData.N, pixel_centered_dir)), 0.01);
+    if(closestDepth >0){
+        
+        if(currentDepth - bias > closestDepth){
+            shadowFactor = 0.0f;
+        }
+
+    }
+
+
+    else{
+        closestDepth = depthRay(lightPos, pixel_centered_dir, 0, 1e+38f);
+        gWriteTestTextures[NonUniformResourceIndex(mipIndex)][shadowMapCoord] = closestDepth;
+
+        if(currentDepth - bias > closestDepth){
+            shadowFactor = 0.0f;
+        }
+    }
+    
 
     float NdotL = saturate(dot(shadeData.N, toLight));
     IBSDF bsdf = gScene.materials.getBSDF(shadeData, lod);
     BSDFProperties bsdfProperties = bsdf.getProperties(shadeData);
     float shininess = 10.0;
-    float3 outColor = (bsdfProperties.diffuseReflectionAlbedo + (pow(NdotL, shininess) * bsdfProperties.specularReflectionAlbedo)) * M_1_PI * lightIntensity;
+    float3 outColor = shadowFactor * (bsdfProperties.diffuseReflectionAlbedo + (pow(NdotL, shininess) * bsdfProperties.specularReflectionAlbedo)) * M_1_PI * lightIntensity;
 
 
-    uint mipIndex = (uint)mipLevel;
     // TEST WRITE just test mip
-    gWriteTestTextures[NonUniformResourceIndex(mipIndex)][shadowMapCoord] = 42;
+    
 
 
     gOutput[launchIndex] = float4(outColor, shadeData.opacity);
