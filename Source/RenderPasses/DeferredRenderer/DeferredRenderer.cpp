@@ -166,9 +166,9 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     }
 
     // Feedback processing
-    //mpTileUpdateManager->processFeedback();
-    //mpTileUpdateManager->updateTiles();
-    //mpTileUpdateManager->clearFeedback();
+    mpTileUpdateManager->processFeedback();
+    mpTileUpdateManager->updateTiles();
+    mpTileUpdateManager->clearFeedback();
 }
 
 void DeferredRenderer::renderUI(Gui::Widgets& widget)
@@ -276,8 +276,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
             }
             mpFeedbackTextures.push_back(feedbackTex);
         }
-
-        // assume no packed mips because feedback texture access in shader relies on it
+                
 
         // heapsize (in tiles) for shadow maps
         uint heapsize = numLights * mpShadowMapTextures[0]->getNumTilesTotal() / 2;
@@ -292,27 +291,19 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         const uint tileHeight = mpShadowMapTextures[0]->getTileTexelHeight();
         const uint numStandardMips = mpShadowMapTextures[0]->getPackedMipInfo().NumStandardMips;
 
+        // assume no packed mips because feedback texture access in shader relies on it
+        FALCOR_ASSERT(numStandardMips == numShadowMips);
 
-        //defines.add("SHADOW_TEXTURES", getMipViewDefineString(numLights, numMips));
-        //defines.add("WRITE_TO_MIP_FUNC", getWriteToMipFunctionString(numLights, numMips));
-        //defines.add("READ_FROM_MIP_FUNC", getReadFromMipFunctionString(numLights, numMips));
-        //defines.add("GET_MIP_DIMENSIONS_FUNC", mipDimensionsFunctionString(numMips));
-
-        //defines.add("FEEDBACK_TEXTURES", getFeedbackViewDefineString(numLights, numStandardMips));
-        //defines.add("WRITE_FEEDBACK_FUNC", getWriteFeedbackString(numLights, numStandardMips));
 
         defines.add("TILE_WIDTH", std::to_string(tileWidth));
         defines.add("TILE_HEIGHT", std::to_string(tileHeight));
-
-
+        
         defines.add("MIPCOUNT", std::to_string(numShadowMips));
         defines.add("NUMSTANDARDMIPS", std::to_string(numStandardMips));
         defines.add("LIGHTCOUNT", std::to_string(numLights));
         defines.add("SHADOWTEXTURECOUNT", std::to_string(numLights * numShadowMips));
         defines.add("FEEDBACKTEXTURECOUNT", std::to_string(numLights * numStandardMips));
 
-
-        //createTextureBindStrings();
 
         mpProgram = GraphicsProgram::create(desc, defines);
         mpState->setProgram(mpProgram);
@@ -350,40 +341,3 @@ DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), mDepthBias(0.05f)
     mpFbo = Fbo::create();
 }
 
-void DeferredRenderer::createTextureBindStrings()
-{
-    mpShadowMapBindStrings.resize(mpShadowMapTextures.size());
-    for (auto& mipStrings : mpShadowMapBindStrings)
-    {
-        mipStrings.resize(mpShadowMapTextures[0]->getMipCount());
-    }
-
-
-    // bind strings for shadow tex mips
-    for (uint lightIndex = 0; lightIndex < mpShadowMapTextures.size(); ++lightIndex)
-    {
-        for (uint mipLevel = 0; mipLevel < mpShadowMapTextures[0]->getMipCount(); ++mipLevel)
-        {
-            mpShadowMapBindStrings[lightIndex][mipLevel] = std::string("gShadowMap" + std::to_string(lightIndex) + "_" + std::to_string(mipLevel));
-        }
-    }
-
-    mpFeedbackMapBindStrings.resize(mpFeedbackTextures.size());
-    for (auto& mipStrings : mpFeedbackMapBindStrings)
-    {
-        mipStrings.resize(mpFeedbackTextures[0]->getMipCount());
-    }
-
-    // bind strings for feedback tex mips
-    for (uint lightIndex = 0; lightIndex < mpFeedbackTextures.size(); ++lightIndex)
-    {
-        for (uint mipLevel = 0; mipLevel < mpFeedbackTextures[0]->getMipCount(); ++mipLevel)
-        {
-            mpFeedbackMapBindStrings[lightIndex][mipLevel] = std::string("gFeedbackMip" + std::to_string(lightIndex) + "_" + std::to_string(mipLevel));
-        }
-    }
-
-
-
-
-}

@@ -73,22 +73,22 @@ void gsMain(point VsOut input[1], inout TriangleStream<GsOut> outStream)
       
     // vertex 0
     float4 newPos = billboard_center - radius*float4(t,0) - radius*float4(b,0) ;
-    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMatNoJitter);
+    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMat);
     outStream.Append(gsOut);
 
     // vertex 1
     newPos = billboard_center + radius*float4(t,0) - radius*float4(b,0);
-    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMatNoJitter);
+    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMat);
     outStream.Append(gsOut);
 
     // vertex 2
     newPos = billboard_center - radius*float4(t,0) + radius*float4(b,0);
-    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMatNoJitter);
+    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMat);
     outStream.Append(gsOut);
 
     // vertex 3
     newPos = billboard_center + radius*float4(t,0) + radius*float4(b,0);
-    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMatNoJitter);
+    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMat);
     outStream.Append(gsOut);
 
     outStream.RestartStrip();
@@ -143,7 +143,10 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     attenuation = 1.f / (dist*dist);
     float3 lightColor = max(dot(direction, normal), 0.0) * light.intensity * attenuation;
 
-    out_color = float4(lightColor * (diffuseColor + specularColor), 1);
+    
+    float NdotL = saturate(dot(normal, direction));
+    const float shininess = 5.0;
+    out_color = float4(lightColor * (diffuseColor + pow(NdotL, shininess) * specularColor), 1);
 
     // calc shadow
 
