@@ -127,7 +127,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
 
 
 
-    // bind all mip uavs for all ligh ts
+    // bind all mip uavs for all lights
     for (uint lightIndex = 0; lightIndex < numLights; ++lightIndex)
     {
         for (uint mipLevel = 0; mipLevel < numShadowMips; ++mipLevel) {

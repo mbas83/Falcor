@@ -189,7 +189,7 @@ void PrimaryClosestHit(inout PrimaryRayPayload rayData: SV_RayPayload, BuiltInTr
     float2 shadowCoordsDy2 = world_to_latlong_map(normalize(hitPointDy2 - lightPos)) * resolution;
     float2 ShadowCoordDx = abs(shadowCoordsDx1 - shadowCoordsDx2);
     float2 ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2);
-    float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,MIPCOUNT);
+    float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,MIPCOUNT-1);
     resolution = getMipDimensions(int(mipLevel));
     float2 shadowMapCoord = world_to_latlong_map(toHitPos) * resolution;
     float3 pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);

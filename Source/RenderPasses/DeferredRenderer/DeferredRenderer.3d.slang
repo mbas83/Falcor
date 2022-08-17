@@ -95,13 +95,6 @@ void gsMain(point VsOut input[1], inout TriangleStream<GsOut> outStream)
 
 }
 
-
-
-// Virtual Shadow Maps
-RWTexture2D<float> gVirtualShadowMaps[(uint)SHADOWTEXTURECOUNT];
-// Feedback Maps
-RWTexture2D<float> gFeedbackMaps[(uint)FEEDBACKTEXTURECOUNT];
-
 // GBuffer
 Texture2D<float4> gWorldPos;
 Texture2D<float4> gWorldNormal;
@@ -114,6 +107,11 @@ Texture1D<float4> gMipColor;
 
 // Output
 RWTexture2D<float4> gDebug;
+
+// Virtual Shadow Maps
+RWTexture2D<float> gVirtualShadowMaps[(uint)SHADOWTEXTURECOUNT];
+// Feedback Maps
+RWTexture2D<float> gFeedbackMaps[(uint)FEEDBACKTEXTURECOUNT];
 
 float4 psMain(GsOut gsOut) : SV_TARGET0
 {
@@ -212,8 +210,8 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     float currentDepth = dist;
 
     
-    //float closestDepth = gVirtualShadowMaps[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord];
-    float closestDepth =0.f;
+    float closestDepth = gVirtualShadowMaps[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord];
+
 
     if(closestDepth > 0.0f)
     {
@@ -246,7 +244,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
         }
 
         // save to texture
-        //gVirtualShadowMaps[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord] = 0x01;
+        gVirtualShadowMaps[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord] = closestDepth;
 
         if(currentDepth - bias > closestDepth){
             shadowFactor = 0.0f;
@@ -255,12 +253,16 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     out_color *= shadowFactor;
 
-    // assumes no packed mips
+    // assumes no packed mips, feedback map has dimensions (size_x/TILE_WIDTH, size_y/TILE_HEIGHT) 
     uint feedbackTexArrayIndex = MIPCOUNT * lightIndex + mipLevel;
-    //gFeedbackMaps[NonUniformResourceIndex(feedbackTexArrayIndex)][shadowMapCoord] = 0x01;
+    uint2 feedback_coord = uint2(shadowMapCoord / uint2(TILE_WIDTH, TILE_HEIGHT));
+    gFeedbackMaps[NonUniformResourceIndex(feedbackTexArrayIndex)][feedback_coord] = 0xFF;
 
 
-    gDebug[pixelCoord] = float4(gMipColor[mipLevel]);
+     //gFeedbackMaps[NonUniformResourceIndex(feedbackTexArrayIndex)][uint2(0,0)] = 0xFF;
+     
+
+     gDebug[pixelCoord] = float4(gMipColor[mipLevel]);
 
     return out_color;
 }
