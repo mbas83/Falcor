@@ -224,7 +224,7 @@ void PrimaryClosestHit(inout PrimaryRayPayload rayData: SV_RayPayload, BuiltInTr
     float2 ShadowCoordDx = abs(shadowCoordsDx1 - shadowCoordsDx2);
     float2 ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2);
 
-    float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,MIPCOUNT);
+    float mipLevel = clamp( calcLod(ShadowCoordDx, ShadowCoordDy) ,0 ,MIPCOUNT - 1);
 
     // Update Resolution to chosen mipmap level
     resolution = getMipDimensions(int(mipLevel));

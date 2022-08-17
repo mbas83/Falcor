@@ -134,6 +134,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     float dist = length(direction);
    
     if (dist >= gsOut.radius) discard; // skip lights that are too far away
+    if (dot(worldPosW,worldPosW)==0) discard;
     // normalize direction
     direction = direction / dist;
     // physically incorrect attenuation (but this gives the point light an actual radius)
@@ -194,11 +195,12 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     float2 ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2);
 
 
-    uint mipLevel = (uint) clamp( calcLod(ShadowCoordDx, ShadowCoordDy), 0, MIPCOUNT);
-       
+    uint mipLevel = (uint) clamp( calcLod(ShadowCoordDx, ShadowCoordDy), 0, MIPCOUNT - 1);
+
+    const uint shadowTexArrayIndex = MIPCOUNT * lightIndex + mipLevel;
     
     // Update Resolution to chosen mipmap level
-    gVirtualShadowMaps[NonUniformResourceIndex(MIPCOUNT*lightIndex+mipLevel)].GetDimensions(resolution.x,resolution.y);
+    gVirtualShadowMaps[NonUniformResourceIndex(shadowTexArrayIndex)].GetDimensions(resolution.x,resolution.y);
     float2 shadowMapCoord = world_to_latlong_map(-direction) * resolution;
     // ray should always go through center of the shadow map pixel
     float3 pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);
@@ -209,9 +211,9 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     float currentDepth = dist;
 
-    const uint shadowTexArrayIndex = MIPCOUNT * lightIndex + mipLevel;
-    float closestDepth = gVirtualShadowMaps[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord];
-
+    
+    //float closestDepth = gVirtualShadowMaps[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord];
+    float closestDepth =0.f;
 
     if(closestDepth > 0.0f)
     {
@@ -244,7 +246,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
         }
 
         // save to texture
-        gVirtualShadowMaps[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord] = closestDepth;
+        //gVirtualShadowMaps[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord] = 0x01;
 
         if(currentDepth - bias > closestDepth){
             shadowFactor = 0.0f;
@@ -254,8 +256,8 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     out_color *= shadowFactor;
 
     // assumes no packed mips
-    uint feedbackTexArrayIndex = lightIndex * MIPCOUNT + mipLevel;
-    gFeedbackMaps[NonUniformResourceIndex(feedbackTexArrayIndex)][shadowMapCoord] = 0xFF;
+    uint feedbackTexArrayIndex = MIPCOUNT * lightIndex + mipLevel;
+    //gFeedbackMaps[NonUniformResourceIndex(feedbackTexArrayIndex)][shadowMapCoord] = 0x01;
 
 
     gDebug[pixelCoord] = float4(gMipColor[mipLevel]);
