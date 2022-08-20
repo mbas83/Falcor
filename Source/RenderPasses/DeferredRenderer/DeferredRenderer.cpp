@@ -132,7 +132,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     {
         for (uint mipLevel = 0; mipLevel < numShadowMips; ++mipLevel) {
             // index = numMips*lightIndex + mipLevel
-            mpVars["gVirtualShadowMaps"][lightIndex * numShadowMips + mipLevel].setUav(mpShadowMapTextures[lightIndex]->getUAV(mipLevel));
+            mpVars["gVirtualShadowMaps"][lightIndex * numShadowMips + mipLevel].setUav(mpShadowMapUAVs[lightIndex][mipLevel]);
         }
     }
 
@@ -140,8 +140,8 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     for (uint lightIndex = 0; lightIndex < numLights; ++lightIndex)
     {
         // feedback only for standard packed mips
-        for (uint mipLevel = 0; mipLevel < mpShadowMapTextures[0]->getPackedMipInfo().NumStandardMips; ++mipLevel) {
-            mpVars["gFeedbackMaps"][lightIndex * mpShadowMapTextures[0]->getPackedMipInfo().NumStandardMips + mipLevel].setUav(mpFeedbackTextures[lightIndex]->getUAV(mipLevel));
+        for (uint mipLevel = 0; mipLevel < numStandardMips; ++mipLevel) {
+            mpVars["gFeedbackMaps"][lightIndex * numStandardMips + mipLevel].setUav(mpFeedbackMapUAVs[lightIndex][mipLevel]);
         }
     }
 
@@ -269,14 +269,14 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
             uint tileHeight = shadowMap->getTileTexelHeight();
             mpShadowMapTextures.push_back(shadowMap);
 
-            auto feedbackTex = FeedbackTexture::createFeedbackTexture(shadowMapWidth, shadowMapHeight, tileWidth, tileHeight,maxMipCount);
+            auto feedbackTex = FeedbackTexture::createFeedbackTexture(shadowMapWidth, shadowMapHeight, tileWidth, tileHeight, maxMipCount);
             for (uint mipIndex = 0; mipIndex < feedbackTex->getMipCount(); ++mipIndex)
             {
                 pRenderContext->clearUAV(feedbackTex->getUAV(mipIndex).get(), uint4(0));
             }
             mpFeedbackTextures.push_back(feedbackTex);
         }
-                
+
 
         // heapsize (in tiles) for shadow maps
         uint heapsize = numLights * mpShadowMapTextures[0]->getNumTilesTotal() / 2;
@@ -287,9 +287,9 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
         // add defines for shadow map access
         numShadowMips = mpShadowMapTextures[0]->getMipCount();
+        numStandardMips = mpShadowMapTextures[0]->getPackedMipInfo().NumStandardMips;
         const uint tileWidth = mpShadowMapTextures[0]->getTileTexelWidth();
         const uint tileHeight = mpShadowMapTextures[0]->getTileTexelHeight();
-        const uint numStandardMips = mpShadowMapTextures[0]->getPackedMipInfo().NumStandardMips;
 
         // assume no packed mips because feedback texture access in shader relies on it
         FALCOR_ASSERT(numStandardMips == numShadowMips);
@@ -297,7 +297,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
         defines.add("TILE_WIDTH", std::to_string(tileWidth));
         defines.add("TILE_HEIGHT", std::to_string(tileHeight));
-        
+
         defines.add("MIPCOUNT", std::to_string(numShadowMips));
         defines.add("NUMSTANDARDMIPS", std::to_string(numStandardMips));
         defines.add("LIGHTCOUNT", std::to_string(numLights));
@@ -310,6 +310,8 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
         mpVars = GraphicsVars::create(mpProgram->getReflector());
 
+
+        preGenerateUAVS();
     }
 }
 
@@ -341,3 +343,27 @@ DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), mDepthBias(0.05f)
     mpFbo = Fbo::create();
 }
 
+void DeferredRenderer::preGenerateUAVS()
+{
+    // shadow map uavs
+    mpShadowMapUAVs.resize(mpShadowMapTextures.size());
+
+    for (uint lightIndex = 0; lightIndex < numLights; ++lightIndex)
+    {
+        for (uint mipLevel = 0; mipLevel < numShadowMips; ++mipLevel) {
+            // index = numMips*lightIndex + mipLevel
+            mpShadowMapUAVs[lightIndex].emplace_back(mpShadowMapTextures[lightIndex]->getUAV(mipLevel));
+        }
+    }
+
+    // feedback map uavs
+    mpFeedbackMapUAVs.resize(mpFeedbackTextures.size());
+
+    for (uint lightIndex = 0; lightIndex < numLights; ++lightIndex)
+    {
+        // feedback only for standard packed mips
+        for (uint mipLevel = 0; mipLevel < numStandardMips; ++mipLevel) {
+            mpFeedbackMapUAVs[lightIndex].emplace_back(mpFeedbackTextures[lightIndex]->getUAV(mipLevel));
+        }
+    }
+}

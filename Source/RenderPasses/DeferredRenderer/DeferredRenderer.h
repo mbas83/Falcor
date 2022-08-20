@@ -92,13 +92,15 @@ private:
     int mipLevelToWrite = 0;
     uint numLights;
     uint numShadowMips;
+    uint numStandardMips;
 
     bool mSaveDebug = false;
 
     // name of texture in shader for binding
-    std::vector<std::vector<std::string>> mpShadowMapBindStrings;
-    std::vector<std::vector<std::string>> mpFeedbackMapBindStrings;
+    std::vector<std::vector<UnorderedAccessView::SharedPtr>> mpShadowMapUAVs;
+    std::vector<std::vector<UnorderedAccessView::SharedPtr>> mpFeedbackMapUAVs;
 
-    void createTextureBindStrings();
+    // generate all needed uavs beforehand
+    void preGenerateUAVS();
 
 };

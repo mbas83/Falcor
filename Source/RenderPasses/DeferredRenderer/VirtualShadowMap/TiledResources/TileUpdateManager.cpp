@@ -188,7 +188,7 @@ namespace Falcor {
                 D3D12DescriptorSet::GpuHandle gpuHandle = pSet->getGpuHandle(0);
                 gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-                //TODO: fix bug: use rectangles
+                //TODO: fix bug: if a lot of rectangles -> stack overrun 
                 //mpRenderContext->getLowLevelData()->getCommandList()->ClearUnorderedAccessViewFloat(gpuHandle, cpuHandle, pUav->getResource()->getApiHandle(), value_ptr(clear), clearRectCount, &clearRectangles[i][0]);
                 mpRenderContext->clearUAV(pUav.get(), float4(0));
             }
