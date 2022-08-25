@@ -62,33 +62,47 @@ void gsMain(point VsOut input[1], inout TriangleStream<GsOut> outStream)
     float3 lightPosW = light.posW;
 
     //billboard tangent space
-    float3 n = normalize(gScene.camera.data.posW - lightPosW);
-    float3 t = normalize(cross(float3(0,1,0), n));
-    float3 b = normalize(cross(n,t));
+    //float3 n = normalize(gScene.camera.data.posW - lightPosW);
+    //float3 t = normalize(cross(float3(0,1,0), n));
+    //float3 b = normalize(cross(n,t));
 
     // move billboard center along view direction
-    float4 billboard_center  = float4(lightPosW - (n * radius),1.f);
+    float4 billboard_center  = float4(lightPosW ,1.f);
 
-    //float4 center_pos = mul(float4(billboard_center,1.f), gScene.camera.data.viewMat);
-      
+    float4 center_pos = mul(billboard_center, gScene.camera.data.viewMat);
+
+    if(center_pos.z - radius > -gScene.camera.data.nearZ){
+        return;
+    }
+
+    center_pos.z = min(center_pos.z, -gScene.camera.data.nearZ);
+
     // vertex 0
-    float4 newPos = billboard_center - radius*float4(t,0) - radius*float4(b,0) ;
-    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMat);
+    //float4 newPos = billboard_center - radius*float4(t,0) - radius*float4(b,0) ;
+    //gsOut.posH = mul(newPos,gScene.camera.data.viewProjMat);
+    float4 newPos = center_pos + float4(-radius, -radius , 0  , 0);
+    gsOut.posH = mul(newPos,gScene.camera.data.projMat);
     outStream.Append(gsOut);
 
     // vertex 1
-    newPos = billboard_center + radius*float4(t,0) - radius*float4(b,0);
-    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMat);
+    //newPos = billboard_center + radius*float4(t,0) - radius*float4(b,0);
+    //gsOut.posH = mul(newPos,gScene.camera.data.viewProjMat);
+    newPos = center_pos + float4(+radius, -radius , 0  , 0);
+    gsOut.posH = mul(newPos,gScene.camera.data.projMat);
     outStream.Append(gsOut);
 
     // vertex 2
-    newPos = billboard_center - radius*float4(t,0) + radius*float4(b,0);
-    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMat);
+    //newPos = billboard_center - radius*float4(t,0) + radius*float4(b,0);
+    //gsOut.posH = mul(newPos,gScene.camera.data.viewProjMat);
+    newPos = center_pos + float4(-radius, +radius , 0  , 0);
+    gsOut.posH = mul(newPos,gScene.camera.data.projMat);
     outStream.Append(gsOut);
 
     // vertex 3
-    newPos = billboard_center + radius*float4(t,0) + radius*float4(b,0);
-    gsOut.posH = mul(newPos,gScene.camera.data.viewProjMat);
+    //newPos = billboard_center + radius*float4(t,0) + radius*float4(b,0);
+    //gsOut.posH = mul(newPos,gScene.camera.data.viewProjMat);
+    newPos = center_pos + float4(+radius, +radius , 0  , 0);
+    gsOut.posH = mul(newPos,gScene.camera.data.projMat);
     outStream.Append(gsOut);
 
     outStream.RestartStrip();
@@ -258,11 +272,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     uint2 feedback_coord = uint2(shadowMapCoord / uint2(TILE_WIDTH, TILE_HEIGHT));
     gFeedbackMaps[NonUniformResourceIndex(feedbackTexArrayIndex)][feedback_coord] = 0xFF;
 
-
-     //gFeedbackMaps[NonUniformResourceIndex(feedbackTexArrayIndex)][uint2(0,0)] = 0xFF;
-     
-
-     gDebug[pixelCoord] = float4(gMipColor[mipLevel]);
+    gDebug[pixelCoord] = float4(gMipColor[mipLevel]);
 
     return out_color;
 }
