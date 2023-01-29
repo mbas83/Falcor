@@ -32,6 +32,11 @@ namespace Falcor {
         // clear feedback texture
         void clearFeedback() const;
 
+        // return size of heap
+        auto getHeapSizeInBytes() const { return mHeapAllocator.getHeapSizeInBytes(); }
+        // return currently used memory of tile heap in Bytes
+        auto getCurrentlyUsedMemory() const { return mNumTilesMappedToMemory * D3D12_TILED_RESOURCE_TILE_SIZE_IN_BYTES;}
+
     private:
 
         TileUpdateManager(const std::vector<FeedbackTexture::SharedPtr>& feedbackTextures, const std::vector<TiledTexture::SharedPtr>& shadowMaps, UINT
@@ -50,7 +55,7 @@ namespace Falcor {
 
         // update mappings
         void mapTiles(UINT shadowMapIndex);
-        void unmapTiles(UINT shadowMapIndex) const;
+        void unmapTiles(UINT shadowMapIndex);
 
         // clear new mapped tiles to zero
         void clearNewTiles(UINT shadowMapIndex) const;
@@ -69,6 +74,9 @@ namespace Falcor {
         // number of used mip levels
         UINT mNumStandardMips;
 
+        // number of tiles currently mapped to memory
+        UINT mNumTilesMappedToMemory;
+
         // readback heaps for every feedback tex and their respective mip level
         std::vector<std::vector<ResourceHandle>> mReadbackBuffers;
 
@@ -80,7 +88,6 @@ namespace Falcor {
 
         // fence to sync cpu with copy texture for each feedback tex
         std::vector<GpuFence::SharedPtr> mReadbackFence;
-
 
         friend class Device;
 

@@ -6,11 +6,12 @@
 namespace Falcor {
 
 
-    HeapAllocationManager::HeapAllocationManager(UINT heapsizeInTiles) : mUsedHeapTiles(heapsizeInTiles, false), mHeapSize(heapsizeInTiles)
+    HeapAllocationManager::HeapAllocationManager(UINT heapsizeInTiles) :
+        mUsedHeapTiles(heapsizeInTiles, false),
+        mHeapSizeInTiles(heapsizeInTiles),
+        mHeapSizeInBytes(heapsizeInTiles* D3D12_TILED_RESOURCE_TILE_SIZE_IN_BYTES)
     {
-        const UINT heapSize = heapsizeInTiles * D3D12_TILED_RESOURCE_TILE_SIZE_IN_BYTES;
-
-        CD3DX12_HEAP_DESC heapDesc(heapSize, D3D12_HEAP_TYPE_DEFAULT, 0, D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES);
+        CD3DX12_HEAP_DESC heapDesc(mHeapSizeInBytes, D3D12_HEAP_TYPE_DEFAULT, 0, D3D12_HEAP_FLAG_DENY_BUFFERS | D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES);
 
         FALCOR_D3D_CALL(gpDevice->getApiHandle()->CreateHeap(&heapDesc, IID_PPV_ARGS(&mTileHeap)));
         mTileHeap->SetName(L"TileHeap");
@@ -29,13 +30,14 @@ namespace Falcor {
                 // heap tile already in use, check next
                 currentHeapIndex++;
 
-                FALCOR_ASSERT(currentHeapIndex < mHeapSize);
+                FALCOR_ASSERT(currentHeapIndex < mHeapSizeInTiles);
             }
             else
             {
                 indices.push_back(currentHeapIndex);
                 mUsedHeapTiles[currentHeapIndex] = true;
                 numTiles--;
+                //
             }
 
         }
@@ -50,6 +52,8 @@ namespace Falcor {
             mUsedHeapTiles[offset] = false;
         }
     }
+
+
 
 
     HeapAllocationManager::~HeapAllocationManager()

@@ -197,9 +197,17 @@ void DeferredRenderer::renderUI(Gui::Widgets& widget)
     {
         mSaveDebug = true;
     }
-    
+
     widget.slider("LightIndex", lightIndexToWrite, 0, static_cast<int>(mpShadowMapTextures.size()) - 1);
     widget.slider("Mip Level", mipLevelToWrite, 0, static_cast<int>(mpShadowMapTextures[0]->getMipCount()) - 1);
+
+
+    const float heapSizeInMB = static_cast<float>( mpTileUpdateManager->getHeapSizeInBytes()) / 1000 / 1000;
+    const float usedMemoryInMB = static_cast<float>( mpTileUpdateManager->getCurrentlyUsedMemory()) / 1000 / 1000;
+    
+
+    std::string memstring("TileHeap GPU Memory:" + std::to_string(usedMemoryInMB) + "MB/" + std::to_string(heapSizeInMB) +"MB");
+    widget.text(memstring);
 }
 
 void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)

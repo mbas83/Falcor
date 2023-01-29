@@ -19,11 +19,14 @@ namespace Falcor
 
         HeapHandle getHeapHandle() { return mTileHeap; }
 
+        auto getHeapSizeInBytes() const { return mHeapSizeInBytes; }
+
     private:
 
         // store indices of currently used heap tiles
         std::vector<bool> mUsedHeapTiles;
-        UINT mHeapSize;
+        const UINT mHeapSizeInTiles;
+        const UINT mHeapSizeInBytes;
 
         HeapHandle mTileHeap;
     };

@@ -57,6 +57,8 @@ namespace Falcor {
             D3D12_RANGE readbackBufferRange{ 0, static_cast<SIZE_T>(width) * height };
             FALCOR_D3D_CALL(mReadbackBuffers[shadowMapIndex][subresourceIndex]->Map(0, &readbackBufferRange, reinterpret_cast<void**>(&pReadbackBufferData)));
 
+            //TODO: test if copying everything first is faster? -> create UINT8 array with maximum size
+
             for (UINT y = 0; y < height; ++y)
             {
                 for (UINT x = 0; x < width; ++x)
@@ -199,7 +201,7 @@ namespace Falcor {
     TileUpdateManager::TileUpdateManager(const std::vector<FeedbackTexture::SharedPtr>& feedbackTextures, const std::vector<TiledTexture::SharedPtr>& shadowMaps, UINT
         heapSizeInTiles, RenderContext* renderContext) :
         mFeedbackTextures(feedbackTextures), mShadowMaps(shadowMaps), mNumShadowMaps(static_cast<UINT>(shadowMaps.size())),
-        mpRenderContext(renderContext), mHeapAllocator(heapSizeInTiles)
+        mNumTilesMappedToMemory(0), mpRenderContext(renderContext), mHeapAllocator(heapSizeInTiles) 
     {
 
         auto tiling = mShadowMaps[0]->getTiling();
@@ -305,6 +307,9 @@ namespace Falcor {
             {
                 mpRenderContext->clearUAV(mShadowMaps[shadowMapIndex]->getUAV(i).get(), float4(0));
             }
+
+            // count mapped mip tiles
+            mNumTilesMappedToMemory += numPackedMipTiles;
         }
 
     }
@@ -363,9 +368,12 @@ namespace Falcor {
             &heapOffsets[0],
             &oneTileCount[0],
             D3D12_TILE_MAPPING_FLAG_NONE);
+
+        //count mapped tiles
+        mNumTilesMappedToMemory += numTiles;
     }
 
-    void TileUpdateManager::unmapTiles(UINT shadowMapIndex) const
+    void TileUpdateManager::unmapTiles(UINT shadowMapIndex)
     {
         // unmap to be evicted tiles
         auto numTiles = static_cast<UINT>(mEvictTiles[shadowMapIndex].size());
@@ -381,6 +389,9 @@ namespace Falcor {
             nullptr,
             nullptr,
             D3D12_TILE_MAPPING_FLAG_NONE);
+
+        //count unmapped tiles
+        mNumTilesMappedToMemory -= numTiles;
     }
 
 
