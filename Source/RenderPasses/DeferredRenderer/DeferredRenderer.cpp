@@ -147,16 +147,17 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
 
     // bind mip color texture
     mpVars["gMipColor"] = mipColorTex->asTexture();
+    {
+        FALCOR_PROFILE("drawLights");
 
-    FALCOR_PROFILE("drawLights");
+        mpState->setVao(mpLightsVao);
+        mpState->setRasterizerState(mpRsState);
+        mpScene->setRaytracingShaderData(pRenderContext, mpVars->getRootVar());
+        mpVars->setParameterBlock("gScene", mpScene->getParameterBlock());
 
-    mpState->setVao(mpLightsVao);
-    mpState->setRasterizerState(mpRsState);
-    mpScene->setRaytracingShaderData(pRenderContext, mpVars->getRootVar());
-    mpVars->setParameterBlock("gScene", mpScene->getParameterBlock());
-
-    pRenderContext->drawIndirect(mpState.get(), mpVars.get(), 1, mpDrawBuffer.get(), 0, nullptr, 0);
-
+        pRenderContext->drawIndirect(mpState.get(), mpVars.get(), 1, mpDrawBuffer.get(), 0, nullptr, 0);
+        //pRenderContext->draw(mpState.get(),mpVars.get(),numLights,0);
+    }
 
     if (mSaveDebug)
     {
@@ -165,10 +166,21 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
         mSaveDebug = false;
     }
 
-    // Feedback processing
-    mpTileUpdateManager->processFeedback();
-    mpTileUpdateManager->updateTiles();
-    mpTileUpdateManager->clearFeedback();
+    // Feedback processing (Reading from feedback texture and processing dta on CPU)
+    {
+        FALCOR_PROFILE("Read and Process Feedback");
+        mpTileUpdateManager->processFeedback();
+    }
+    // map and unmap tiles
+    {
+        FALCOR_PROFILE("Update Tiles");
+        mpTileUpdateManager->updateTiles();
+    }
+    //clear Feedback textures
+    {
+        FALCOR_PROFILE("Clear Feedback Textures");
+        mpTileUpdateManager->clearFeedback();
+    }
 }
 
 void DeferredRenderer::renderUI(Gui::Widgets& widget)
@@ -185,7 +197,7 @@ void DeferredRenderer::renderUI(Gui::Widgets& widget)
     {
         mSaveDebug = true;
     }
-
+    
     widget.slider("LightIndex", lightIndexToWrite, 0, static_cast<int>(mpShadowMapTextures.size()) - 1);
     widget.slider("Mip Level", mipLevelToWrite, 0, static_cast<int>(mpShadowMapTextures[0]->getMipCount()) - 1);
 }
@@ -216,16 +228,17 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         {
             PointLightVertex p;
             const auto& lightData = mpScene->getLight(i)->getData();
-            p.radius = 10; //TODO: change radius calculation
+            p.radius = 30; //TODO: change radius calculation
             p.lightIndex = i;
             pointLights.emplace_back(p);
         }
 
         const uint32_t vbSize = (uint32_t)(sizeof(PointLightVertex) * numLights);
+        // create vertex buffer for points
         auto pVB = Buffer::create(vbSize, Buffer::BindFlags::Vertex, Buffer::CpuAccess::Write, (void*)pointLights.data());
         FALCOR_ASSERT(pVB);
 
-        // create vao (only need radius and index of light, 
+        // create vao (only need radius and index of light) 
         VertexLayout::SharedPtr pLayout = VertexLayout::create();
         VertexBufferLayout::SharedPtr pBufLayout = VertexBufferLayout::create();
         pBufLayout->addElement("RADIUSSIZE", 0, ResourceFormat::R32Float, 1, 0);    //radius
@@ -279,7 +292,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
 
         // heapsize (in tiles) for shadow maps
-        uint heapsize = numLights * mpShadowMapTextures[0]->getNumTilesTotal() / 2;
+        uint heapsize = numLights * mpShadowMapTextures[0]->getNumTilesTotal();
 
         // create heap and heap tile manager
         mpTileUpdateManager = TileUpdateManager::createTileUpdateManager(mpFeedbackTextures, mpShadowMapTextures, heapsize, pRenderContext);

@@ -41,7 +41,7 @@ namespace Falcor {
         void resolveFeedback(UINT feedbackIndex, UINT subResourceIndex) const;
 
         // read feedback tex and add pending tile loads/evictions
-        void applyFeedback(UINT shadowMapIndex);
+        void readAndApplyFeedback(UINT shadowMapIndex);
 
         // add tile to load
         void AddLoadingUpdate(UINT shadowMapIndex, UINT x, UINT y, UINT subresourceIndex);

@@ -19,14 +19,14 @@ namespace Falcor {
     {
         for (UINT i = 0; i < mNumShadowMaps; ++i)
         {
-            applyFeedback(i);
+            readAndApplyFeedback(i);
         }
     }
 
-    void TileUpdateManager::applyFeedback(UINT shadowMapIndex)
+    void TileUpdateManager::readAndApplyFeedback(UINT shadowMapIndex)
     {
         // tiled texture: resource barrier  uav -> copy source
-        // redback buffer: already in copy dest
+        // readback buffer: already in copy dest
         mpRenderContext->resourceBarrier(mFeedbackTextures[shadowMapIndex].get(), Resource::State::CopySource);
 
 
@@ -188,7 +188,7 @@ namespace Falcor {
                 D3D12DescriptorSet::GpuHandle gpuHandle = pSet->getGpuHandle(0);
                 gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-                //TODO: fix bug: if a lot of rectangles -> stack overrun 
+                //TODO: fix bug: when using (too many?) rectangles -> nvwgf2umx.dll: "Stack cookie instrumentation code detected a stack-based buffer overrun." (maybe too many?)
                 //mpRenderContext->getLowLevelData()->getCommandList()->ClearUnorderedAccessViewFloat(gpuHandle, cpuHandle, pUav->getResource()->getApiHandle(), value_ptr(clear), clearRectCount, &clearRectangles[i][0]);
                 mpRenderContext->clearUAV(pUav.get(), float4(0));
             }
