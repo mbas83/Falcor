@@ -37,6 +37,9 @@ namespace Falcor {
         // return currently used memory of tile heap in Bytes
         auto getCurrentlyUsedMemory() const { return mNumTilesMappedToMemory * D3D12_TILED_RESOURCE_TILE_SIZE_IN_BYTES;}
 
+        // TODO: test copying texture data first
+        std::unique_ptr<UINT[]> mTextureReadbackPtr;
+
     private:
 
         TileUpdateManager(const std::vector<FeedbackTexture::SharedPtr>& feedbackTextures, const std::vector<TiledTexture::SharedPtr>& shadowMaps, UINT

@@ -54,16 +54,34 @@ namespace Falcor {
             UINT height = tiling[subresourceIndex].HeightInTiles;
             const auto rowPitch = mLayouts[subresourceIndex].Footprint.RowPitch;
 
-            D3D12_RANGE readbackBufferRange{ 0, static_cast<SIZE_T>(width) * height };
-            FALCOR_D3D_CALL(mReadbackBuffers[shadowMapIndex][subresourceIndex]->Map(0, &readbackBufferRange, reinterpret_cast<void**>(&pReadbackBufferData)));
+            FALCOR_D3D_CALL(mReadbackBuffers[shadowMapIndex][subresourceIndex]->Map(0, nullptr, reinterpret_cast<void**>(&pReadbackBufferData)));
 
-            //TODO: test if copying everything first is faster? -> create UINT8 array with maximum size
+            //TODO: test if copying everything first is faster? -> create UINT8 array with maximum size (https://github.com/microsoft/DirectXTK12/blob/c17a8a211678bee71e3ba4ca19a0c58223be0f28/Src/ScreenGrab.cpp#L407)
+            // must copy row by row
+            //auto dptr = mTextureReadbackPtr.get();
+            /* for (UINT h = 0; h < height-1; ++h)
+            {
+                memcpy(dptr, pReadbackBufferData, width*sizeof(UINT));
+                pReadbackBufferData += rowPitch;
+                dptr += width;
+            }
+
+
+            // Unmap texture, range (0,0) indicates that CPU did not write any data
+            D3D12_RANGE emptyRange{ 0, 0 };
+            mReadbackBuffers[shadowMapIndex][subresourceIndex]->Unmap
+            (
+                0,
+                &emptyRange
+            );*/
+
 
             for (UINT y = 0; y < height; ++y)
             {
                 for (UINT x = 0; x < width; ++x)
                 {
                     UINT value = pReadbackBufferData[x];
+                    //UINT value = mTextureReadbackPtr[y * rowPitch + x];
                     if (value)
                     {
                         // only add tile if not already resident
@@ -98,6 +116,7 @@ namespace Falcor {
                 }
 
                 pReadbackBufferData += rowPitch;
+
             }
 
             // Unmap texture
@@ -201,7 +220,7 @@ namespace Falcor {
     TileUpdateManager::TileUpdateManager(const std::vector<FeedbackTexture::SharedPtr>& feedbackTextures, const std::vector<TiledTexture::SharedPtr>& shadowMaps, UINT
         heapSizeInTiles, RenderContext* renderContext) :
         mFeedbackTextures(feedbackTextures), mShadowMaps(shadowMaps), mNumShadowMaps(static_cast<UINT>(shadowMaps.size())),
-        mNumTilesMappedToMemory(0), mpRenderContext(renderContext), mHeapAllocator(heapSizeInTiles) 
+        mNumTilesMappedToMemory(0), mpRenderContext(renderContext), mHeapAllocator(heapSizeInTiles)
     {
 
         auto tiling = mShadowMaps[0]->getTiling();
@@ -279,7 +298,7 @@ namespace Falcor {
 
             // start at first packed mip subresource, region size is then number of packed mips
             auto numPackedMipTiles = mShadowMaps[shadowMapIndex]->getPackedMipInfo().NumTilesForPackedMips;
-            if(numPackedMipTiles <= 0)
+            if (numPackedMipTiles <= 0)
             {
                 continue;
             }
@@ -312,6 +331,12 @@ namespace Falcor {
             mNumTilesMappedToMemory += numPackedMipTiles;
         }
 
+        //TODO: test
+        // maximum size is width * height of mip 0, rowpitch not needed here, because
+        /*UINT height = tiling[0].HeightInTiles;
+        UINT width = tiling[0].WidthInTiles;
+        mTextureReadbackPtr = std::make_unique<UINT[]>(width * height);*/
+        
     }
 
     void TileUpdateManager::resolveFeedback(UINT feedbackIndex, UINT subResourceIndex) const
