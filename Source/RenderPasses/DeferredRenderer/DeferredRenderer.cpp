@@ -202,11 +202,11 @@ void DeferredRenderer::renderUI(Gui::Widgets& widget)
     widget.slider("Mip Level", mipLevelToWrite, 0, static_cast<int>(mpShadowMapTextures[0]->getMipCount()) - 1);
 
 
-    const float heapSizeInMB = static_cast<float>( mpTileUpdateManager->getHeapSizeInBytes()) / 1000 / 1000;
-    const float usedMemoryInMB = static_cast<float>( mpTileUpdateManager->getCurrentlyUsedMemory()) / 1000 / 1000;
-    
+    const float heapSizeInMB = static_cast<float>(mpTileUpdateManager->getHeapSizeInBytes()) / 1000 / 1000;
+    const float usedMemoryInMB = static_cast<float>(mpTileUpdateManager->getCurrentlyUsedMemory()) / 1000 / 1000;
 
-    std::string memstring("TileHeap GPU Memory:" + std::to_string(usedMemoryInMB) + "MB/" + std::to_string(heapSizeInMB) +"MB");
+
+    std::string memstring("TileHeap GPU Memory:" + std::to_string(usedMemoryInMB) + "MB/" + std::to_string(heapSizeInMB) + "MB");
     widget.text(memstring);
 }
 
@@ -214,6 +214,13 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 {
     mpScene = pScene;
 
+    //VSM
+    constexpr uint shadowMapWidth = 16384;
+    constexpr uint shadowMapHeight = 8192;
+    constexpr uint maxMipCount = 6;
+
+    // only use level 0 to numUsedMipsForFeedback-1 for feedback, other mips always allocated
+    constexpr uint numUsedMipsForFeedback = 0;
 
     if (mpScene)
     {
@@ -269,17 +276,9 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
         mpDrawBuffer = Buffer::create(sizeof(drawLightPoints[0]) * drawLightPoints.size(), Resource::BindFlags::IndirectArg, Buffer::CpuAccess::None, drawLightPoints.data());
         mpDrawBuffer->setName("Lights Draw Buffer");
-
-        //VSM
-        constexpr uint shadowMapWidth = 16384;
-        constexpr uint shadowMapHeight = 8192;
-
+        
         // Texture for LOD colors
         mipColorTex = Texture::create1D(7, ResourceFormat::RGBA8Unorm, 1, 1, getMipColorData().data(), Resource::BindFlags::ShaderResource);
-
-        // TODO: move VSM init to other file?
-
-        constexpr uint maxMipCount = 6;
 
         // create a tiled tex and feedback map for every light
         for (uint i = 0; i < numLights; ++i)

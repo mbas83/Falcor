@@ -59,7 +59,7 @@ namespace Falcor {
             //TODO: test if copying everything first is faster? -> create UINT8 array with maximum size (https://github.com/microsoft/DirectXTK12/blob/c17a8a211678bee71e3ba4ca19a0c58223be0f28/Src/ScreenGrab.cpp#L407)
             // must copy row by row
             //auto dptr = mTextureReadbackPtr.get();
-            /* for (UINT h = 0; h < height-1; ++h)
+            /* for (UINT h = 0; h < height; ++h)
             {
                 memcpy(dptr, pReadbackBufferData, width*sizeof(UINT));
                 pReadbackBufferData += rowPitch;
@@ -210,8 +210,22 @@ namespace Falcor {
                 gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
                 //TODO: fix bug: when using (too many?) rectangles -> nvwgf2umx.dll: "Stack cookie instrumentation code detected a stack-based buffer overrun." (maybe too many?)
-                //mpRenderContext->getLowLevelData()->getCommandList()->ClearUnorderedAccessViewFloat(gpuHandle, cpuHandle, pUav->getResource()->getApiHandle(), value_ptr(clear), clearRectCount, &clearRectangles[i][0]);
-                mpRenderContext->clearUAV(pUav.get(), float4(0));
+                //if (clearRectCount > 64)
+                //{
+                //    mpRenderContext->clearUAV(pUav.get(), float4(0));
+                //}
+
+                // if clearing more than x rects at once -> nvwgf2umx.dll: "Stack cookie instrumentation code detected a stack-based buffer overrun."
+                // for now clear maximum of 64 at once
+                constexpr int numMaxClearsAtOnce = 64;
+                int toClear = clearRectCount;
+                int currentIndex = 0;
+                while (toClear > 0) {
+                    UINT clearCount = std::min(numMaxClearsAtOnce, toClear);
+                    mpRenderContext->getLowLevelData()->getCommandList()->ClearUnorderedAccessViewFloat(gpuHandle, cpuHandle, pUav->getResource()->getApiHandle(), value_ptr(clear), clearCount, &clearRectangles[i][currentIndex]);
+                    toClear -= clearCount;
+                    currentIndex += clearCount;
+                }
             }
         }
 
@@ -331,12 +345,12 @@ namespace Falcor {
             mNumTilesMappedToMemory += numPackedMipTiles;
         }
 
-        //TODO: test
+        //Used for copying texture before
         // maximum size is width * height of mip 0, rowpitch not needed here, because
         /*UINT height = tiling[0].HeightInTiles;
         UINT width = tiling[0].WidthInTiles;
         mTextureReadbackPtr = std::make_unique<UINT[]>(width * height);*/
-        
+
     }
 
     void TileUpdateManager::resolveFeedback(UINT feedbackIndex, UINT subResourceIndex) const
