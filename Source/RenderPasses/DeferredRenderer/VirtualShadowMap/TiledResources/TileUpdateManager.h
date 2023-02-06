@@ -70,6 +70,7 @@ namespace Falcor {
         // textures
         std::vector<FeedbackTexture::SharedPtr> mFeedbackTextures;
         std::vector<TiledTexture::SharedPtr> mShadowMaps;
+        std::vector<std::array<UINT8*, 6>> mMappedShadowMaps;
 
         // number of shadow maps
         UINT mNumShadowMaps;

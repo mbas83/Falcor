@@ -37,24 +37,24 @@ namespace Falcor {
 
 
         // use fence to wait for GPU to copy feedback tex data into readback buffer
-        mReadbackFence[shadowMapIndex]->gpuSignal(mpRenderContext->getLowLevelData()->getCommandQueue());
+        //mReadbackFence[shadowMapIndex]->gpuSignal(mpRenderContext->getLowLevelData()->getCommandQueue());
 
-        mpRenderContext->flush(false);
+        //mpRenderContext->flush(false);
 
-        mReadbackFence[shadowMapIndex]->syncCpu();
+        //mReadbackFence[shadowMapIndex]->syncCpu();
 
 
         // read feedback texture and add tiles to pending tile list
         for (UINT subresourceIndex = 0; subresourceIndex < mNumStandardMips; ++subresourceIndex)
         {
-            UINT8* pReadbackBufferData{};
+            UINT8* pReadbackBufferData = mMappedShadowMaps[shadowMapIndex][subresourceIndex];
 
             auto tiling = mShadowMaps[shadowMapIndex]->getTiling();
             UINT width = tiling[subresourceIndex].WidthInTiles;
             UINT height = tiling[subresourceIndex].HeightInTiles;
             const auto rowPitch = mLayouts[subresourceIndex].Footprint.RowPitch;
-
-            FALCOR_D3D_CALL(mReadbackBuffers[shadowMapIndex][subresourceIndex]->Map(0, nullptr, reinterpret_cast<void**>(&pReadbackBufferData)));
+            //
+            //FALCOR_D3D_CALL(mReadbackBuffers[shadowMapIndex][subresourceIndex]->Map(0, nullptr, reinterpret_cast<void**>(&pReadbackBufferData)));
 
             //TODO: test if copying everything first is faster? -> create UINT8 array with maximum size (https://github.com/microsoft/DirectXTK12/blob/c17a8a211678bee71e3ba4ca19a0c58223be0f28/Src/ScreenGrab.cpp#L407)
             // must copy row by row
@@ -120,12 +120,12 @@ namespace Falcor {
             }
 
             // Unmap texture
-            D3D12_RANGE emptyRange{ 0, 0 };
-            mReadbackBuffers[shadowMapIndex][subresourceIndex]->Unmap
-            (
-                0,
-                &emptyRange
-            );
+            //D3D12_RANGE emptyRange{ 0, 0 };
+            //mReadbackBuffers[shadowMapIndex][subresourceIndex]->Unmap
+            //(
+            //    0,
+            //    &emptyRange
+            //);
         }
 
 
@@ -237,6 +237,7 @@ namespace Falcor {
         mNumTilesMappedToMemory(0), mpRenderContext(renderContext), mHeapAllocator(heapSizeInTiles)
     {
 
+
         auto tiling = mShadowMaps[0]->getTiling();
 
         mNumStandardMips = mShadowMaps[0]->getPackedMipInfo().NumStandardMips;
@@ -345,7 +346,27 @@ namespace Falcor {
             mNumTilesMappedToMemory += numPackedMipTiles;
         }
 
-        //Used for copying texture before
+
+        mMappedShadowMaps.resize(mNumShadowMaps);
+        // get mapping for each shadow map
+        for (size_t shadowMapIndex = 0; shadowMapIndex < mNumShadowMaps; ++shadowMapIndex)
+        {
+            for (UINT subresourceIndex = 0; subresourceIndex < mNumStandardMips; ++subresourceIndex)
+            {
+                assert(mNumStandardMips == 6);
+                UINT8* pReadbackBufferData = nullptr;
+
+                auto tiling = mShadowMaps[shadowMapIndex]->getTiling();
+                UINT width = tiling[subresourceIndex].WidthInTiles;
+                UINT height = tiling[subresourceIndex].HeightInTiles;
+                const auto rowPitch = mLayouts[subresourceIndex].Footprint.RowPitch;
+
+                FALCOR_D3D_CALL(mReadbackBuffers[shadowMapIndex][subresourceIndex]->Map(0, nullptr, reinterpret_cast<void**>(&pReadbackBufferData)));
+                mMappedShadowMaps[shadowMapIndex][subresourceIndex] = pReadbackBufferData;
+            }
+        }
+
+        //TODO: test
         // maximum size is width * height of mip 0, rowpitch not needed here, because
         /*UINT height = tiling[0].HeightInTiles;
         UINT width = tiling[0].WidthInTiles;
