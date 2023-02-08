@@ -166,7 +166,7 @@ namespace Falcor
         std::vector<bool> mMatricesChanged;         ///< Flag per matrix, true if matrix changed since last frame.
 
         bool mFirstUpdate = true;       ///< True if this is the first update.
-        bool mEnabled = true;           ///< True if animations are enabled.
+        bool mEnabled = false;           ///< True if animations are enabled.
         bool mPrevEnabled = false;      ///< True if animations were enabled in previous frame.
         double mTime = 0.0;             ///< Global time of current frame.
         double mPrevTime = 0.0;         ///< Global time of previous frame.
