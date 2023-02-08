@@ -20,7 +20,7 @@ namespace Falcor
         auto width = pairedTexwidth / (tileWidth);
         auto height = pairedTexHeight / (tileHeight);
 
-        FeedbackTexture::SharedPtr pTexture = SharedPtr(new FeedbackTexture(width, height, 1, 1, mipLevels, 1, ResourceFormat::R8Uint, Type::Texture2D, BindFlags::UnorderedAccess | BindFlags::ShaderResource, tileWidth, tileHeight));
+        FeedbackTexture::SharedPtr pTexture = SharedPtr(new FeedbackTexture(width, height, 1, 1, mipLevels, 1, ResourceFormat::R8Uint, Type::Texture2D, BindFlags::UnorderedAccess | BindFlags::ShaderResource | BindFlags::RenderTarget, tileWidth, tileHeight));
         pTexture->init();
         return pTexture;
     }
@@ -32,15 +32,13 @@ namespace Falcor
 
     void FeedbackTexture::init()
     {
-
-
         D3D12_RESOURCE_DESC desc = {};
 
         desc.MipLevels = mMipLevels;
         desc.Format = getDxgiFormat(mFormat);
         desc.Width = mWidth;
         desc.Height = mHeight;
-        desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS | D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
         desc.SampleDesc.Count = 1;
         desc.SampleDesc.Quality = 0;
         desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;

@@ -53,8 +53,7 @@ namespace Falcor {
             UINT width = tiling[subresourceIndex].WidthInTiles;
             UINT height = tiling[subresourceIndex].HeightInTiles;
             const auto rowPitch = mLayouts[subresourceIndex].Footprint.RowPitch;
-            //
-            //FALCOR_D3D_CALL(mReadbackBuffers[shadowMapIndex][subresourceIndex]->Map(0, nullptr, reinterpret_cast<void**>(&pReadbackBufferData)));
+
 
             //TODO: test if copying everything first is faster? -> create UINT8 array with maximum size (https://github.com/microsoft/DirectXTK12/blob/c17a8a211678bee71e3ba4ca19a0c58223be0f28/Src/ScreenGrab.cpp#L407)
             // must copy row by row
@@ -119,13 +118,6 @@ namespace Falcor {
 
             }
 
-            // Unmap texture
-            //D3D12_RANGE emptyRange{ 0, 0 };
-            //mReadbackBuffers[shadowMapIndex][subresourceIndex]->Unmap
-            //(
-            //    0,
-            //    &emptyRange
-            //);
         }
 
 
@@ -166,7 +158,7 @@ namespace Falcor {
         for (UINT feedbackIndex = 0; feedbackIndex < mNumShadowMaps; ++feedbackIndex)
         {
             for (UINT i = 0; i < mNumStandardMips; ++i) {
-                mpRenderContext->clearUAV(mFeedbackTextures[feedbackIndex]->getUAV(i).get(), uint4(0));
+                mpRenderContext->clearRtv(mFeedbackTextures[feedbackIndex]->getRTV(i).get(), float4(0));
             }
         }
     }
@@ -210,12 +202,10 @@ namespace Falcor {
                 gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
                 //TODO: fix bug: when using (too many?) rectangles -> nvwgf2umx.dll: "Stack cookie instrumentation code detected a stack-based buffer overrun." (maybe too many?)
-                //if (clearRectCount > 64)
-                //{
-                //    mpRenderContext->clearUAV(pUav.get(), float4(0));
-                //}
+                mpRenderContext->clearUAV(pUav.get(), float4(0));
 
-                // if clearing more than x rects at once -> nvwgf2umx.dll: "Stack cookie instrumentation code detected a stack-based buffer overrun."
+
+                /* if clearing more than x rects at once -> nvwgf2umx.dll: "Stack cookie instrumentation code detected a stack-based buffer overrun."
                 // for now clear maximum of 64 at once
                 constexpr int numMaxClearsAtOnce = 64;
                 int toClear = clearRectCount;
@@ -225,7 +215,7 @@ namespace Falcor {
                     mpRenderContext->getLowLevelData()->getCommandList()->ClearUnorderedAccessViewFloat(gpuHandle, cpuHandle, pUav->getResource()->getApiHandle(), value_ptr(clear), clearCount, &clearRectangles[i][currentIndex]);
                     toClear -= clearCount;
                     currentIndex += clearCount;
-                }
+                }*/
             }
         }
 
@@ -356,21 +346,10 @@ namespace Falcor {
                 assert(mNumStandardMips == 6);
                 UINT8* pReadbackBufferData = nullptr;
 
-                auto tiling = mShadowMaps[shadowMapIndex]->getTiling();
-                UINT width = tiling[subresourceIndex].WidthInTiles;
-                UINT height = tiling[subresourceIndex].HeightInTiles;
-                const auto rowPitch = mLayouts[subresourceIndex].Footprint.RowPitch;
-
                 FALCOR_D3D_CALL(mReadbackBuffers[shadowMapIndex][subresourceIndex]->Map(0, nullptr, reinterpret_cast<void**>(&pReadbackBufferData)));
                 mMappedShadowMaps[shadowMapIndex][subresourceIndex] = pReadbackBufferData;
             }
         }
-
-        //TODO: test
-        // maximum size is width * height of mip 0, rowpitch not needed here, because
-        /*UINT height = tiling[0].HeightInTiles;
-        UINT width = tiling[0].WidthInTiles;
-        mTextureReadbackPtr = std::make_unique<UINT[]>(width * height);*/
 
     }
 

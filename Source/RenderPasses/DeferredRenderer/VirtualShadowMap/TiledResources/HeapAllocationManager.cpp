@@ -37,7 +37,6 @@ namespace Falcor {
                 indices.push_back(currentHeapIndex);
                 mUsedHeapTiles[currentHeapIndex] = true;
                 numTiles--;
-                //
             }
 
         }
