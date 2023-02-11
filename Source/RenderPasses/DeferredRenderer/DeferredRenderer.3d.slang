@@ -116,7 +116,7 @@ RWTexture2D<float> gFeedbackMaps[(uint)FEEDBACKTEXTURECOUNT];
 
 float4 psMain(GsOut gsOut) : SV_TARGET0
 {
-    float4 out_color;
+    float3 out_color;
 
     int2 pixelCoord = gsOut.posH.xy;
     uint lightIndex = gsOut.index;
@@ -136,17 +136,22 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     if (dot(worldPosW,worldPosW)==0) discard;
     // normalize direction
     direction = direction / dist;
+
+
     // physically incorrect attenuation (but this gives the point light an actual radius)
     float attenuation = pow(1.0 - pow(dist / gsOut.radius, 2.0), 2.0);
-
     // use correct attenuation
     attenuation = 1.f / (dist*dist);
-    float3 lightColor = max(dot(direction, normal), 0.0) * light.intensity * attenuation;
 
-    
+    //attenuation = 1.f;
+
+    float t =  lerp( (normal.z+1)/2, 0.2,0.1);
+
     float NdotL = saturate(dot(normal, direction));
+    float3 lightColor = NdotL * light.intensity * attenuation;
+        
     const float shininess = 5.0;
-    out_color = float4(lightColor * (diffuseColor + pow(NdotL, shininess) * specularColor), 1);
+    out_color =  (diffuseColor + (pow(NdotL, shininess) * specularColor)) * lightColor * t;     
 
     // calc shadow
 
@@ -254,6 +259,10 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     out_color *= shadowFactor;
 
+     // ambient term
+    out_color += diffuseColor * 0.01f;
+
+
     // assumes no packed mips, feedback map has dimensions (size_x/TILE_WIDTH, size_y/TILE_HEIGHT) 
     uint feedbackTexArrayIndex = MIPCOUNT * lightIndex + mipLevel;
     uint2 feedback_coord = uint2(shadowMapCoord / uint2(TILE_WIDTH, TILE_HEIGHT));
@@ -261,5 +270,5 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     gDebug[pixelCoord] = float4(gMipColor[mipLevel]);
 
-    return out_color;
+    return float4(out_color,1);
 }

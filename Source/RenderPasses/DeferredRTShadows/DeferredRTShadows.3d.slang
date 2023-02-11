@@ -2,6 +2,7 @@ import Scene.RaytracingInline;
 import Utils.Math.Ray;
 import Utils.Math.MathHelpers;
 import Rendering.Materials.TexLODHelpers;
+import Rendering.Lights.LightHelpers;
 
 import RenderPasses.ShadowRayCache.Helper;
 
@@ -108,7 +109,7 @@ RWTexture2D<float4> gDebug;
 
 float4 psMain(GsOut gsOut) : SV_TARGET0
 {
-    float4 out_color;
+    float3 out_color;
 
     int2 pixelCoord = gsOut.posH.xy;
     uint lightIndex = gsOut.index;
@@ -128,18 +129,23 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     if (dot(worldPosW,worldPosW)==0) discard;
     // normalize direction
     direction = direction / dist;
+
+
     // physically incorrect attenuation (but this gives the point light an actual radius)
     float attenuation = pow(1.0 - pow(dist / gsOut.radius, 2.0), 2.0);
-
     // use correct attenuation
     attenuation = 1.f / (dist*dist);
-    float3 lightColor = max(dot(direction, normal), 0.0) * light.intensity * attenuation;
 
-    
+    //attenuation = 1.f;
+
+    float t =  lerp( (normal.z+1)/2, 0.2,0.1);
+
     float NdotL = saturate(dot(normal, direction));
+    float3 lightColor = NdotL * light.intensity * attenuation;
+        
     const float shininess = 5.0;
-    out_color = float4(lightColor * (diffuseColor + pow(NdotL, shininess) * specularColor), 1);
-
+    out_color =  (diffuseColor + (pow(NdotL, shininess) * specularColor)) * lightColor * t;     
+   
     // calc shadow
     float3 shadowRay = lightPosW - worldPosW;
     float3 rayDir = normalize(shadowRay);
@@ -164,5 +170,10 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     out_color *= shadowFactor;
 
-    return out_color;
+    // ambient term
+    out_color += diffuseColor * 0.01f;
+
+
+
+    return float4(out_color,1);
 }
