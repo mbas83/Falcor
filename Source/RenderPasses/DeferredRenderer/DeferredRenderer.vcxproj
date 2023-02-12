@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <ShaderSource Include="DeferredRenderer.3d.slang" />
+    <ShaderSource Include="ShadingHelper.slang" />
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>

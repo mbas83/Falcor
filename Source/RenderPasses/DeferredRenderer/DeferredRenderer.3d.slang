@@ -4,7 +4,7 @@ import Utils.Math.MathHelpers;
 import Rendering.Materials.TexLODHelpers;
 
 import RenderPasses.ShadowRayCache.Helper;
-
+import ShadingHelper;
 
 cbuffer PerFrameCB
 {
@@ -121,8 +121,8 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     int2 pixelCoord = gsOut.posH.xy;
     uint lightIndex = gsOut.index;
 
-    const LightData light = gScene.getLight(lightIndex);
-    float3 lightPosW = light.posW;
+    const LightData lightData = gScene.getLight(lightIndex);
+    float3 lightPosW = lightData.posW;
 
     float3 diffuseColor = gDiffuse[pixelCoord].rgb;
     float3 specularColor = gSpecular[pixelCoord].rgb;
@@ -137,23 +137,21 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     // normalize direction
     direction = direction / dist;
 
-
+    //calc shading------------------------------------------------------------------------------------
     // physically incorrect attenuation (but this gives the point light an actual radius)
-    float attenuation = pow(1.0 - pow(dist / gsOut.radius, 2.0), 2.0);
+    //float attenuation = pow(1.0 - pow(dist / gsOut.radius, 2.0), 2.0);
     // use correct attenuation
-    attenuation = 1.f / (dist*dist);
+    //attenuation = 1.f / (dist*dist);
 
-    //attenuation = 1.f;
+    float3 incomingRadiance = getLightRadiance(worldPosW, lightData);
 
     float t =  lerp( (normal.z+1)/2, 0.2,0.1);
-
-    float NdotL = saturate(dot(normal, direction));
-    float3 lightColor = NdotL * light.intensity * attenuation;
-        
+    float NdotL = saturate(dot(normal, direction));  
     const float shininess = 5.0;
-    out_color =  (diffuseColor + (pow(NdotL, shininess) * specularColor)) * lightColor * t;     
+    out_color =  (diffuseColor + (pow(NdotL, shininess) * specularColor)) * incomingRadiance * t;       
 
-    // calc shadow
+
+    // calc shadow------------------------------------------------------------------------------------
 
     // calc mipLevel
     float3 eyePos = gScene.camera.data.posW;
@@ -260,7 +258,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     out_color *= shadowFactor;
 
      // ambient term
-    out_color += diffuseColor * 0.01f;
+    out_color += diffuseColor * kAmbientValue;
 
 
     // assumes no packed mips, feedback map has dimensions (size_x/TILE_WIDTH, size_y/TILE_HEIGHT) 

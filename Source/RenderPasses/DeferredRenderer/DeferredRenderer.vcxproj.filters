@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <ShaderSource Include="DeferredRenderer.3d.slang" />
+    <ShaderSource Include="ShadingHelper.slang" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="VirtualShadowMap">

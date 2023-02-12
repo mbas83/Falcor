@@ -243,7 +243,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         {
             PointLightVertex p;
             const auto& lightData = mpScene->getLight(i)->getData();
-            p.radius = 30; //TODO: change radius calculation
+            p.radius = 40; //TODO: change radius calculation
             p.lightIndex = i;
             pointLights.emplace_back(p);
         }
