@@ -61,7 +61,7 @@ namespace Falcor {
         void unmapTiles(UINT shadowMapIndex);
 
         // clear new mapped tiles to zero
-        void clearNewTiles(UINT shadowMapIndex) const;
+        void clearUnmappedTiles(UINT shadowMapIndex) const;
 
         // list to track tiles that should be (un)loaded for each shadow map
         std::vector<std::vector< D3D12_TILED_RESOURCE_COORDINATE>> mPendingTiles;
@@ -77,6 +77,7 @@ namespace Falcor {
 
         // number of used mip levels
         UINT mNumStandardMips;
+        UINT mNumUsedMipsForFeedback;
 
         // number of tiles currently mapped to memory
         UINT mNumTilesMappedToMemory;

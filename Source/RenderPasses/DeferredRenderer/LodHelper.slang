@@ -31,3 +31,6 @@ float calcLod2(float2 dX, float2 dY){
     float delta_max_sqr = max(dot(dX, dX), dot(dY, dY));
     return 0.5 * log2(delta_max_sqr);
 }
+
+
+static const float mipBias[6] = { 0.04, 0.06, 0.1, 0.14, 0.17, 0.3 };

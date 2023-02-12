@@ -209,11 +209,13 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
         
 
     float shadowFactor = 1.0f;
-    float bias = max(gDepthBias * (1.0f - dot(normal, pixel_centered_dir)), 0.01f);
+
+    //TODO: calc bias from mip level
+    float mipLvlBias = mipBias[mipLevel];
+    float bias = max(mipLvlBias * (1.0f - dot(normal, pixel_centered_dir)), 0.01f);
+
 
     float currentDepth = dist;
-
-    
     float closestDepth = gVirtualShadowMaps[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord];
 
 

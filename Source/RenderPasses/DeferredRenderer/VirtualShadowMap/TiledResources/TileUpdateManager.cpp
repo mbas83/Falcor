@@ -134,14 +134,14 @@ namespace Falcor {
             {
                 // Map pending tiles
                 mapTiles(shadowMapIndex);
-                // clear new tiles to zero
-                clearNewTiles(shadowMapIndex);
                 mPendingTiles[shadowMapIndex].clear();
             }
 
 
             if (!mEvictTiles[shadowMapIndex].empty())
             {
+                // clear tiles that are unmapped to zero, so that all unmapped memory is always zero
+                clearUnmappedTiles(shadowMapIndex);
                 // evict pending tiles
                 unmapTiles(shadowMapIndex);
                 // update heap manager state
@@ -163,7 +163,7 @@ namespace Falcor {
         }
     }
 
-    void TileUpdateManager::clearNewTiles(UINT shadowMapIndex) const
+    void TileUpdateManager::clearUnmappedTiles(UINT shadowMapIndex) const
     {
         auto clear = float4(0);
         std::vector<std::vector<D3D12_RECT>> clearRectangles;
@@ -172,7 +172,7 @@ namespace Falcor {
         auto tileWidth = mShadowMaps[shadowMapIndex]->getTileTexelWidth();
         auto tileHeight = mShadowMaps[shadowMapIndex]->getTileTexelHeight();
 
-        for (const auto& tileCoord : mPendingTiles[shadowMapIndex])
+        for (const auto& tileCoord : mEvictTiles[shadowMapIndex])
         {
             // create rectangle that contains the tile
             auto left = tileWidth * tileCoord.X;
@@ -203,7 +203,7 @@ namespace Falcor {
 
                 //TODO: fix bug: when using (too many?) rectangles -> nvwgf2umx.dll: "Stack cookie instrumentation code detected a stack-based buffer overrun." (maybe too many?)
                 mpRenderContext->clearUAV(pUav.get(), float4(0));
-
+                
 
                 /* if clearing more than x rects at once -> nvwgf2umx.dll: "Stack cookie instrumentation code detected a stack-based buffer overrun."
                 // for now clear maximum of 64 at once

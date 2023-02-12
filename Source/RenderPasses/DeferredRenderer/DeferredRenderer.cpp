@@ -94,7 +94,7 @@ RenderPassReflection DeferredRenderer::reflect(const CompileData& compileData)
     // Define the required resources here
     RenderPassReflection reflector;
     addRenderPassInputs(reflector, kInputChannels);
-
+    
     reflector.addOutput(kOut, "Final color of deferred renderer");
     reflector.addOutput(kDebug, "debug tex").format(ResourceFormat::RGBA32Float);
     return reflector;
