@@ -3,7 +3,7 @@ import Utils.Math.Ray;
 import Utils.Math.MathHelpers;
 import Rendering.Materials.TexLODHelpers;
 
-import RenderPasses.ShadowRayCache.Helper;
+import LodHelper;
 import ShadingHelper;
 
 cbuffer PerFrameCB
