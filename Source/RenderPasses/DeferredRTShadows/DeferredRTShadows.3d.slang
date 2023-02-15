@@ -148,7 +148,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
    // calc shadow----------------------------------------------------------------------------------
 
     //from light to worldPosW
-    float3 shadowRay = worldPosW - lightPosW;
+    float3 shadowRay = lightPosW - worldPosW;
     float3 rayDir = normalize(shadowRay);
     float shadowTMax = length(shadowRay);
     
@@ -164,7 +164,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     uint flags = RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER;
 
     // Ray(origin,  dir,  tMin = 0.f, float tMax = FLT_MAX)
-    const Ray ray = Ray(computeRayOrigin(lightPosW,normal) , rayDir, 1.0e-4, shadowTMax);
+    const Ray ray = Ray(computeRayOrigin(worldPosW,normal) , rayDir, 1.0e-4, shadowTMax);
     if (!sceneRayQuery.traceVisibilityRay(ray, flags, 0xff))
     {
         shadowFactor = 0.0f;
