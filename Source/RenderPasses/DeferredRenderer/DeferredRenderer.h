@@ -103,4 +103,9 @@ private:
     // generate all needed uavs beforehand
     void preGenerateUAVS();
 
+
+    // abmient light pass
+    FullScreenPass::SharedPtr mpAmbientLightPass;
+
+    void executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData);
 };

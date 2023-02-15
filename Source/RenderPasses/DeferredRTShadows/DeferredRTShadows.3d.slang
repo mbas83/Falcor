@@ -167,9 +167,6 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     out_color *= shadowFactor;
 
-    // ambient term
-    out_color += diffuseColor * kAmbientValue;
-
 
     return float4(out_color,1);
 }

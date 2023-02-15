@@ -1,7 +1,7 @@
 import Scene.Lights.LightData;
 
 static const float kMinLightDistSqr = 1e-9f;
-static const float kAmbientValue = 0.01f;
+static const float kAmbientValue = 0.05f;
 
 
 float3 getLightRadiance(const float3 shadingPosW, const LightData light){

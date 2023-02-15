@@ -118,19 +118,28 @@ void DeferredRTShadows::execute(RenderContext* pRenderContext, const RenderData&
     mpVars["gDebug"] = renderData[kDebug]->asTexture();
     mpVars["PerFrameCB"]["viewportDims"] = float2(mpFbo->getWidth(), mpFbo->getHeight());
 
-    mpState->setVao(mpLightsVao);
-    mpState->setRasterizerState(mpRsState);
-    mpScene->setRaytracingShaderData(pRenderContext, mpVars->getRootVar());
-    mpVars->setParameterBlock("gScene", mpScene->getParameterBlock());
+    {
+        FALCOR_PROFILE("drawLights");
 
-    pRenderContext->drawIndirect(mpState.get(), mpVars.get(), 1, mpDrawBuffer.get(), 0, nullptr, 0);
-    //pRenderContext->draw(mpState.get(),mpVars.get(),numLights,0);
-    
+        mpState->setVao(mpLightsVao);
+        mpState->setRasterizerState(mpRsState);
+        mpScene->setRaytracingShaderData(pRenderContext, mpVars->getRootVar());
+        mpVars->setParameterBlock("gScene", mpScene->getParameterBlock());
+
+        pRenderContext->drawIndirect(mpState.get(), mpVars.get(), 1, mpDrawBuffer.get(), 0, nullptr, 0);
+        //pRenderContext->draw(mpState.get(),mpVars.get(),numLights,0);
+    }
+
     if (mSaveDebug)
     {
         auto filename = std::string("D:\\debugTex") + ".pfm";
         renderData[kDebug]->asTexture()->captureToFile(0, 0, filename, Bitmap::FileFormat::PfmFile, Bitmap::ExportFlags::Uncompressed);
         mSaveDebug = false;
+    }
+
+    {
+        FALCOR_PROFILE("drawAmbientLight");
+        executeAmbientLightPass(pRenderContext, renderData);
     }
 }
 
@@ -237,4 +246,25 @@ DeferredRTShadows::DeferredRTShadows() : RenderPass(kInfo)
 
 
     mpFbo = Fbo::create();
+
+    // ambient light pass
+    mpAmbientLightPass = FullScreenPass::create("RenderPasses/DeferredRenderer/AmbientPass/AmbientPass.ps.slang");
+    mpAmbientLightPass->getState()->setBlendState(BlendState::create(blendDesc));
+}
+
+void DeferredRTShadows::executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData)
+{
+    // iResolution
+    float width = (float)mpFbo->getWidth();
+    float height = (float)mpFbo->getHeight();
+    mpAmbientLightPass["AmbientCB"]["iResolution"] = float2(width, height);
+    
+    // GBuffer Input
+    mpAmbientLightPass->getVars()["gWorldPos"] = renderData[kPosW]->asTexture();
+    mpAmbientLightPass->getVars()["gDiffuse"] = renderData[kDiffuse]->asTexture();
+    mpAmbientLightPass->getVars()["gSpecular"] = renderData[kSpecular]->asTexture();
+
+    mpAmbientLightPass->getState()->setFbo(mpFbo);
+    // run final pass
+    mpAmbientLightPass->execute(pRenderContext, mpFbo);
 }

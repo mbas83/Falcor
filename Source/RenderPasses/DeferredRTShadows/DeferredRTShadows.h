@@ -68,4 +68,10 @@ private:
 
     bool mSaveDebug = false;
     uint numLights = 0;
+
+    // ambient light pass
+    FullScreenPass::SharedPtr mpAmbientLightPass;
+
+    void executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData);
+
 };

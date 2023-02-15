@@ -259,9 +259,6 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     out_color *= shadowFactor;
 
-     // ambient term
-    out_color += diffuseColor * kAmbientValue;
-
 
     // assumes no packed mips, feedback map has dimensions (size_x/TILE_WIDTH, size_y/TILE_HEIGHT) 
     uint feedbackTexArrayIndex = MIPCOUNT * lightIndex + mipLevel;

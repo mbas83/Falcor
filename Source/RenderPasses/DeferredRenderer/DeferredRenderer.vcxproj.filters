@@ -49,6 +49,9 @@
     <ShaderSource Include="DeferredRenderer.3d.slang" />
     <ShaderSource Include="ShadingHelper.slang" />
     <ShaderSource Include="LodHelper.slang" />
+    <ShaderSource Include="AmbientPass\AmbientPass.ps.slang">
+      <Filter>AmbientPass</Filter>
+    </ShaderSource>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="VirtualShadowMap">
@@ -59,6 +62,9 @@
     </Filter>
     <Filter Include="VirtualShadowMap\Utils">
       <UniqueIdentifier>{a81bc1dc-8918-4b8b-98c5-c8f1c5c4c9cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AmbientPass">
+      <UniqueIdentifier>{407636d5-36e1-4c07-85e2-43aad266c65d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

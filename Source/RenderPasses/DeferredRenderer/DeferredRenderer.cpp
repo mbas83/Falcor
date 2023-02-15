@@ -94,7 +94,7 @@ RenderPassReflection DeferredRenderer::reflect(const CompileData& compileData)
     // Define the required resources here
     RenderPassReflection reflector;
     addRenderPassInputs(reflector, kInputChannels);
-    
+
     reflector.addOutput(kOut, "Final color of deferred renderer");
     reflector.addOutput(kDebug, "debug tex").format(ResourceFormat::RGBA32Float);
     return reflector;
@@ -157,6 +157,11 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
 
         pRenderContext->drawIndirect(mpState.get(), mpVars.get(), 1, mpDrawBuffer.get(), 0, nullptr, 0);
         //pRenderContext->draw(mpState.get(),mpVars.get(),numLights,0);
+    }
+
+    {
+        FALCOR_PROFILE("Ambient Light");
+        executeAmbientLightPass(pRenderContext, renderData);
     }
 
     if (mSaveDebug)
@@ -276,7 +281,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
         mpDrawBuffer = Buffer::create(sizeof(drawLightPoints[0]) * drawLightPoints.size(), Resource::BindFlags::IndirectArg, Buffer::CpuAccess::None, drawLightPoints.data());
         mpDrawBuffer->setName("Lights Draw Buffer");
-        
+
         // Texture for LOD colors
         mipColorTex = Texture::create1D(7, ResourceFormat::RGBA8Unorm, 1, 1, getMipColorData().data(), Resource::BindFlags::ShaderResource);
 
@@ -361,6 +366,10 @@ DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), mDepthBias(0.05f)
 
 
     mpFbo = Fbo::create();
+
+    // ambient light pass
+    mpAmbientLightPass = FullScreenPass::create("RenderPasses/DeferredRenderer/AmbientPass/AmbientPass.ps.slang");
+    mpAmbientLightPass->getState()->setBlendState(BlendState::create(blendDesc));
 }
 
 void DeferredRenderer::preGenerateUAVS()
@@ -386,4 +395,21 @@ void DeferredRenderer::preGenerateUAVS()
             mpFeedbackMapUAVs[lightIndex].emplace_back(mpFeedbackTextures[lightIndex]->getUAV(mipLevel));
         }
     }
+}
+
+void DeferredRenderer::executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData)
+{
+    // iResolution
+    float width = (float)mpFbo->getWidth();
+    float height = (float)mpFbo->getHeight();
+    mpAmbientLightPass["AmbientCB"]["iResolution"] = float2(width, height);
+
+    // GBuffer Input
+    mpAmbientLightPass->getVars()["gWorldPos"] = renderData[kPosW]->asTexture();
+    mpAmbientLightPass->getVars()["gDiffuse"] = renderData[kDiffuse]->asTexture();
+    mpAmbientLightPass->getVars()["gSpecular"] = renderData[kSpecular]->asTexture();
+
+    mpAmbientLightPass->getState()->setFbo(mpFbo);
+    // run final pass
+    mpAmbientLightPass->execute(pRenderContext, mpFbo);
 }
