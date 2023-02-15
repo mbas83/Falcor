@@ -1,7 +1,7 @@
 from falcor import *
 
-def render_graph_DefaultRenderGraph():
-    g = RenderGraph('DefaultRenderGraph')
+def render_graph_PureRTShadows():
+    g = RenderGraph('PureRTShadows')
     loadRenderPassLibrary('DeferredRTShadows.dll')
     loadRenderPassLibrary('GBuffer.dll')
     DeferredRTShadows = createPass('DeferredRTShadows')
@@ -16,6 +16,6 @@ def render_graph_DefaultRenderGraph():
     g.markOutput('DeferredRTShadows.outColor')
     return g
 
-DefaultRenderGraph = render_graph_DefaultRenderGraph()
-try: m.addGraph(DefaultRenderGraph)
+PureRTShadows = render_graph_PureRTShadows()
+try: m.addGraph(PureRTShadows)
 except NameError: None
