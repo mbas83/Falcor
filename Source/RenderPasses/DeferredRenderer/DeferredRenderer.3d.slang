@@ -3,6 +3,8 @@ import Utils.Math.Ray;
 import Utils.Math.MathHelpers;
 import Rendering.Materials.TexLODHelpers;
 
+import Utils.Geometry.GeometryHelpers;
+
 import LodHelper;
 import ShadingHelper;
 

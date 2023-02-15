@@ -3,6 +3,8 @@ import Utils.Math.Ray;
 import Utils.Math.MathHelpers;
 import Rendering.Lights.LightHelpers;
 
+import Utils.Geometry.GeometryHelpers;
+
 import RenderPasses.DeferredRenderer.ShadingHelper;
 
 
@@ -145,25 +147,29 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
    // calc shadow----------------------------------------------------------------------------------
 
-    float3 shadowRay = lightPosW - worldPosW;
+    //from light to worldPosW
+    float3 shadowRay = worldPosW - lightPosW;
     float3 rayDir = normalize(shadowRay);
     float shadowTMax = length(shadowRay);
     
     float shadowFactor = 1.0f;
     
     // create shadow ray from eye to light
-    // Ray(origin,  dir,  tMin = 0.f, float tMax = FLT_MAX)
-    Ray ray = Ray(worldPosW, rayDir, 1.0e-4, shadowTMax);
+
+    //Ray ray = Ray(worldPosW, rayDir, 1.0e-4, shadowTMax);
 
     SceneRayQuery<0> sceneRayQuery;
     HitInfo hit;
     float hitT;
     uint flags = RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER;
 
-    if (sceneRayQuery.traceRay(ray, hit, hitT, flags, 0xff))
+    // Ray(origin,  dir,  tMin = 0.f, float tMax = FLT_MAX)
+    const Ray ray = Ray(computeRayOrigin(lightPosW,normal) , rayDir, 1.0e-4, shadowTMax);
+    if (!sceneRayQuery.traceVisibilityRay(ray, flags, 0xff))
     {
         shadowFactor = 0.0f;
     }
+
 
     out_color *= shadowFactor;
 
