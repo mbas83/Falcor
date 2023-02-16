@@ -10,8 +10,9 @@ import ShadingHelper;
 
 cbuffer PerFrameCB
 {
-    float gDepthBias;
+    float gConstantBias;
     float2 viewportDims;
+    float gMipBias[6];
 };
 
 struct VsIn{
@@ -211,10 +212,11 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
         
 
     float shadowFactor = 1.0f;
+        
 
-    //TODO: calc bias from mip level
-    float mipLvlBias = mipBias[mipLevel];
-    float bias = max(mipLvlBias * (1.0f - dot(normal, pixel_centered_dir)), 0.01f);
+    //TODO: calc bias from mip level, distance factor?
+    float mipLvlBias = gMipBias[mipLevel];
+    float bias = gConstantBias + (mipLvlBias * max(1.0f - dot(normal, direction), 0.01f));
 
 
     float currentDepth = dist;

@@ -122,9 +122,10 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     //Output
     mpVars["gDebug"] = renderData[kDebug]->asTexture();
 
-    mpVars["PerFrameCB"]["gDepthBias"] = mDepthBias;
+    mpVars["PerFrameCB"]["gConstantBias"] = mDepthBias;
     mpVars["PerFrameCB"]["viewportDims"] = float2(mpFbo->getWidth(), mpFbo->getHeight());
-
+    // TODO: test: depth bias
+    mpVars["PerFrameCB"]["gMipBias"].setBlob(mipBiasVals.data(), sizeof(float)*6);
 
 
     // bind all mip uavs for all lights
@@ -171,7 +172,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
         mSaveDebug = false;
     }
 
-    // Feedback processing (Reading from feedback texture and processing dta on CPU)
+    // Feedback processing (Reading from feedback texture and processing data on CPU)
     {
         FALCOR_PROFILE("Read and Process Feedback");
         mpTileUpdateManager->processFeedback();
@@ -186,11 +187,12 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
         FALCOR_PROFILE("Clear Feedback Textures");
         mpTileUpdateManager->clearFeedback();
     }
+
+
 }
 
 void DeferredRenderer::renderUI(Gui::Widgets& widget)
 {
-    widget.var("Depth Bias", mDepthBias, 0.f, FLT_MAX, 0.0001f);
 
     if (widget.button("Save Tiled Texture Mip Level"))
     {
@@ -213,6 +215,14 @@ void DeferredRenderer::renderUI(Gui::Widgets& widget)
 
     std::string memstring("TileHeap GPU Memory:" + std::to_string(usedMemoryInMB) + "MB/" + std::to_string(heapSizeInMB) + "MB");
     widget.text(memstring);
+
+    widget.var("Constant Bias", mDepthBias, 0.f, FLT_MAX, 0.001f);
+    widget.var("Bias Mip 0", mipBiasVals[0], 0.f, 5.f, 0.01f);
+    widget.var("Bias Mip 1", mipBiasVals[1], 0.f, 5.f, 0.01f);
+    widget.var("Bias Mip 2", mipBiasVals[2], 0.f, 5.f, 0.01f);
+    widget.var("Bias Mip 3", mipBiasVals[3], 0.f, 5.f, 0.01f);
+    widget.var("Bias Mip 4", mipBiasVals[4], 0.f, 5.f, 0.01f);
+    widget.var("Bias Mip 5", mipBiasVals[5], 0.f, 5.f, 0.01f);
 }
 
 void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)

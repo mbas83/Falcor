@@ -108,4 +108,6 @@ private:
     FullScreenPass::SharedPtr mpAmbientLightPass;
 
     void executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData);
+
+    std::array<float,6> mipBiasVals{0.f};
 };
