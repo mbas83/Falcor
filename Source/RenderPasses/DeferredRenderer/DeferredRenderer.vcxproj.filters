@@ -52,6 +52,9 @@
     <ShaderSource Include="AmbientPass\AmbientPass.ps.slang">
       <Filter>AmbientPass</Filter>
     </ShaderSource>
+    <ShaderSource Include="AmbientPass\RenderSM.ps.slang">
+      <Filter>AmbientPass</Filter>
+    </ShaderSource>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="VirtualShadowMap">

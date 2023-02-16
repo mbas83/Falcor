@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <ShaderSource Include="AmbientPass\AmbientPass.ps.slang" />
+    <ShaderSource Include="AmbientPass\RenderSM.ps.slang" />
     <ShaderSource Include="DeferredRenderer.3d.slang" />
     <ShaderSource Include="LodHelper.slang" />
     <ShaderSource Include="ShadingHelper.slang" />

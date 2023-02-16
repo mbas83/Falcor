@@ -106,8 +106,14 @@ private:
 
     // abmient light pass
     FullScreenPass::SharedPtr mpAmbientLightPass;
+    FullScreenPass::SharedPtr mpRenderShadowTexturePass;
 
     void executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData);
+    void executeDrawShadowMap(RenderContext* pRenderContext, const RenderData& renderData);
+
+    uint mRenderSMIndex = 0, mRenderMipLevel = 0;
+
 
     std::array<float,6> mipBiasVals{0.f};
 };
+

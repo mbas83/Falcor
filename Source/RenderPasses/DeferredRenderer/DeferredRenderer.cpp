@@ -125,7 +125,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     mpVars["PerFrameCB"]["gConstantBias"] = mDepthBias;
     mpVars["PerFrameCB"]["viewportDims"] = float2(mpFbo->getWidth(), mpFbo->getHeight());
     // TODO: test: depth bias
-    mpVars["PerFrameCB"]["gMipBias"].setBlob(mipBiasVals.data(), sizeof(float)*6);
+    mpVars["PerFrameCB"]["gMipBias"].setBlob(mipBiasVals.data(), sizeof(float) * 6);
 
 
     // bind all mip uavs for all lights
@@ -188,7 +188,10 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
         mpTileUpdateManager->clearFeedback();
     }
 
-
+    {
+        FALCOR_PROFILE("Draw Shadow Map");
+        executeDrawShadowMap(pRenderContext, renderData);
+    }
 }
 
 void DeferredRenderer::renderUI(Gui::Widgets& widget)
@@ -380,6 +383,19 @@ DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), mDepthBias(0.05f)
     // ambient light pass
     mpAmbientLightPass = FullScreenPass::create("RenderPasses/DeferredRenderer/AmbientPass/AmbientPass.ps.slang");
     mpAmbientLightPass->getState()->setBlendState(BlendState::create(blendDesc));
+
+    // render SM pass
+    mpRenderShadowTexturePass = FullScreenPass::create("RenderPasses/DeferredRenderer/AmbientPass/RenderSM.ps.slang");
+    BlendState::Desc overwriteBlend;
+    blendDesc.setIndependentBlend(false);
+    blendDesc.setRtBlend(0, true);
+    blendDesc.setRtParams(0, BlendState::BlendOp::Add,
+        BlendState::BlendOp::Max,
+        BlendState::BlendFunc::One,
+        BlendState::BlendFunc::Zero,
+        BlendState::BlendFunc::One,
+        BlendState::BlendFunc::Zero);
+    mpRenderShadowTexturePass->getState()->setBlendState(BlendState::create(overwriteBlend));
 }
 
 void DeferredRenderer::preGenerateUAVS()
@@ -422,4 +438,20 @@ void DeferredRenderer::executeAmbientLightPass(RenderContext* pRenderContext, co
     mpAmbientLightPass->getState()->setFbo(mpFbo);
     // run final pass
     mpAmbientLightPass->execute(pRenderContext, mpFbo);
+}
+
+
+void DeferredRenderer::executeDrawShadowMap(RenderContext* pRenderContext, const RenderData& renderData)
+{
+    GraphicsState::Viewport lowerRight(0.7f, 0.85f, 0.3f, 0.15f, 0.f, 1.f);
+    mpRenderShadowTexturePass->getState()->setViewport(0, lowerRight);
+    
+    mpRenderShadowTexturePass->getVars()["gShadowMap"].setUav(mpShadowMapTextures[mRenderSMIndex]->getUAV(mRenderMipLevel));
+    float width = (float)mpShadowMapTextures[mRenderSMIndex]->getWidth();
+    float height = (float)mpShadowMapTextures[mRenderSMIndex]->getHeight();
+    mpRenderShadowTexturePass["ShadowMapCB"]["iResolution"] = float2(width, height);
+
+    // write int output texture
+    mpRenderShadowTexturePass->getState()->setFbo(mpFbo);
+    mpRenderShadowTexturePass->execute(pRenderContext, mpFbo);
 }
