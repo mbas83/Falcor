@@ -447,9 +447,6 @@ void DeferredRenderer::executeDrawShadowMap(RenderContext* pRenderContext, const
     mpRenderShadowTexturePass->getState()->setViewport(0, lowerRight);
     
     mpRenderShadowTexturePass->getVars()["gShadowMap"].setUav(mpShadowMapTextures[mRenderSMIndex]->getUAV(mRenderMipLevel));
-    float width = (float)mpShadowMapTextures[mRenderSMIndex]->getWidth();
-    float height = (float)mpShadowMapTextures[mRenderSMIndex]->getHeight();
-    mpRenderShadowTexturePass["ShadowMapCB"]["iResolution"] = float2(width, height);
 
     // write int output texture
     mpRenderShadowTexturePass->getState()->setFbo(mpFbo);
