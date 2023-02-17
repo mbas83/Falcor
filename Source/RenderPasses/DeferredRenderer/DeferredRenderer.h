@@ -112,7 +112,7 @@ private:
     void executeDrawShadowMap(RenderContext* pRenderContext, const RenderData& renderData);
 
     uint mRenderSMIndex = 0, mRenderMipLevel = 0;
-
+    bool mRenderShadowMap = false;
 
     std::array<float,6> mipBiasVals{0.f};
 };

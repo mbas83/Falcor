@@ -189,8 +189,11 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     }
 
     {
-        FALCOR_PROFILE("Draw Shadow Map");
-        executeDrawShadowMap(pRenderContext, renderData);
+        if (mRenderShadowMap)
+        {
+            FALCOR_PROFILE("Draw Shadow Map");
+            executeDrawShadowMap(pRenderContext, renderData);
+        }
     }
 }
 
@@ -215,6 +218,14 @@ void DeferredRenderer::renderUI(Gui::Widgets& widget)
     const float heapSizeInMB = static_cast<float>(mpTileUpdateManager->getHeapSizeInBytes()) / 1000 / 1000;
     const float usedMemoryInMB = static_cast<float>(mpTileUpdateManager->getCurrentlyUsedMemory()) / 1000 / 1000;
 
+    widget.checkbox("Show Shadow Map Content", mRenderShadowMap);
+    if (mRenderShadowMap)
+    {
+        if (auto group = widget.group("RenderShadowMap")) {
+            group.slider("LightIndex", mRenderSMIndex, uint(0), static_cast<uint>(mpShadowMapTextures.size()) - 1);
+            group.slider("Mip Level", mRenderMipLevel, uint(0), static_cast<uint>(mpShadowMapTextures[0]->getMipCount()) - 1);
+        }
+    }
 
     std::string memstring("TileHeap GPU Memory:" + std::to_string(usedMemoryInMB) + "MB/" + std::to_string(heapSizeInMB) + "MB");
     widget.text(memstring);
@@ -445,10 +456,10 @@ void DeferredRenderer::executeDrawShadowMap(RenderContext* pRenderContext, const
 {
     GraphicsState::Viewport lowerRight(0.7f, 0.85f, 0.3f, 0.15f, 0.f, 1.f);
     mpRenderShadowTexturePass->getState()->setViewport(0, lowerRight);
-    
+
     mpRenderShadowTexturePass->getVars()["gShadowMap"].setUav(mpShadowMapTextures[mRenderSMIndex]->getUAV(mRenderMipLevel));
 
-    // write int output texture
+    // write into output texture
     mpRenderShadowTexturePass->getState()->setFbo(mpFbo);
-    mpRenderShadowTexturePass->execute(pRenderContext, mpFbo);
+    mpRenderShadowTexturePass->execute(pRenderContext, mpFbo, false);
 }
