@@ -12,7 +12,7 @@ cbuffer PerFrameCB
 {
     float gConstantBias;
     float2 viewportDims;
-    float gMipBias[6];
+    float4 gMipBias[6];
 };
 
 struct VsIn{
@@ -214,9 +214,11 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     float shadowFactor = 1.0f;
         
 
-    //TODO: calc bias from mip level, distance factor?
-    float mipLvlBias = gMipBias[mipLevel];
-    float bias = gConstantBias + (mipLvlBias * max(1.0f - dot(normal, direction), 0.01f));
+    //TODO: calc bias from mip level?
+    float mipLvlBias = gMipBias[mipLevel].x;
+    //float baseBias = 0.02;
+    //float mipLvlBias = baseBias * pow(2,mipLevel);
+    float bias = gConstantBias + (mipLvlBias * max(1.0f - dot(normal, direction), 0.05f));
 
 
     float currentDepth = dist;

@@ -125,7 +125,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     mpVars["PerFrameCB"]["gConstantBias"] = mDepthBias;
     mpVars["PerFrameCB"]["viewportDims"] = float2(mpFbo->getWidth(), mpFbo->getHeight());
     // TODO: test: depth bias
-    mpVars["PerFrameCB"]["gMipBias"].setBlob(mipBiasVals.data(), sizeof(float) * 6);
+    mpVars["PerFrameCB"]["gMipBias"].setBlob(mipBiasVals.data(), sizeof(float4) * 6);
 
 
     // bind all mip uavs for all lights
@@ -221,7 +221,7 @@ void DeferredRenderer::renderUI(Gui::Widgets& widget)
     widget.checkbox("Show Shadow Map Content", mRenderShadowMap);
     if (mRenderShadowMap)
     {
-        if (auto group = widget.group("RenderShadowMap")) {
+        if (auto group = widget.group("RenderShadowMap", true)) {
             group.slider("LightIndex", mRenderSMIndex, uint(0), static_cast<uint>(mpShadowMapTextures.size()) - 1);
             group.slider("Mip Level", mRenderMipLevel, uint(0), static_cast<uint>(mpShadowMapTextures[0]->getMipCount()) - 1);
         }
@@ -231,12 +231,12 @@ void DeferredRenderer::renderUI(Gui::Widgets& widget)
     widget.text(memstring);
 
     widget.var("Constant Bias", mDepthBias, 0.f, FLT_MAX, 0.001f);
-    widget.var("Bias Mip 0", mipBiasVals[0], 0.f, 5.f, 0.01f);
-    widget.var("Bias Mip 1", mipBiasVals[1], 0.f, 5.f, 0.01f);
-    widget.var("Bias Mip 2", mipBiasVals[2], 0.f, 5.f, 0.01f);
-    widget.var("Bias Mip 3", mipBiasVals[3], 0.f, 5.f, 0.01f);
-    widget.var("Bias Mip 4", mipBiasVals[4], 0.f, 5.f, 0.01f);
-    widget.var("Bias Mip 5", mipBiasVals[5], 0.f, 5.f, 0.01f);
+    widget.var("Bias Mip 0", mipBiasVals[0].x, 0.f, 5.f, 0.01f);
+    widget.var("Bias Mip 1", mipBiasVals[1].x, 0.f, 5.f, 0.01f);
+    widget.var("Bias Mip 2", mipBiasVals[2].x, 0.f, 5.f, 0.01f);
+    widget.var("Bias Mip 3", mipBiasVals[3].x, 0.f, 5.f, 0.01f);
+    widget.var("Bias Mip 4", mipBiasVals[4].x, 0.f, 5.f, 0.01f);
+    widget.var("Bias Mip 5", mipBiasVals[5].x, 0.f, 5.f, 0.01f);
 }
 
 void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
@@ -407,6 +407,7 @@ DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), mDepthBias(0.05f)
         BlendState::BlendFunc::One,
         BlendState::BlendFunc::Zero);
     mpRenderShadowTexturePass->getState()->setBlendState(BlendState::create(overwriteBlend));
+    mpRenderShadowTexturePass->getState()->setDepthStencilState(DepthStencilState::create(dsDesc));
 }
 
 void DeferredRenderer::preGenerateUAVS()
@@ -454,12 +455,18 @@ void DeferredRenderer::executeAmbientLightPass(RenderContext* pRenderContext, co
 
 void DeferredRenderer::executeDrawShadowMap(RenderContext* pRenderContext, const RenderData& renderData)
 {
-    GraphicsState::Viewport lowerRight(0.7f, 0.85f, 0.3f, 0.15f, 0.f, 1.f);
-    mpRenderShadowTexturePass->getState()->setViewport(0, lowerRight);
+    float width = (float) mpFbo->getWidth();
+    float height = (float) mpFbo->getHeight();
 
+    GraphicsState::Viewport lowerRight(width*0.7f, height*0.85f, width*0.3f, height*0.15f, 0.f, 1.f);
+    
     mpRenderShadowTexturePass->getVars()["gShadowMap"].setUav(mpShadowMapTextures[mRenderSMIndex]->getUAV(mRenderMipLevel));
 
     // write into output texture
-    mpRenderShadowTexturePass->getState()->setFbo(mpFbo);
+    mpRenderShadowTexturePass->getState()->setViewport(0, lowerRight, true);
+
+    //mpRenderShadowTexturePass->getState()->setFbo(mpFbo, false);
+       
+
     mpRenderShadowTexturePass->execute(pRenderContext, mpFbo, false);
 }
