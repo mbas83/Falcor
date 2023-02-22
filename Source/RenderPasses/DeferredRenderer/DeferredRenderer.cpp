@@ -122,6 +122,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     //Output
     mpVars["gDebug"] = renderData[kDebug]->asTexture();
 
+    mpVars["gFrameCount"] = mFrameCount++;
     mpVars["PerFrameCB"]["gConstantBias"] = mDepthBias;
     mpVars["PerFrameCB"]["viewportDims"] = float2(mpFbo->getWidth(), mpFbo->getHeight());
     // TODO: test: depth bias
@@ -464,9 +465,6 @@ void DeferredRenderer::executeDrawShadowMap(RenderContext* pRenderContext, const
 
     // write into output texture
     mpRenderShadowTexturePass->getState()->setViewport(0, lowerRight, true);
-
-    //mpRenderShadowTexturePass->getState()->setFbo(mpFbo, false);
-       
 
     mpRenderShadowTexturePass->execute(pRenderContext, mpFbo, false);
 }

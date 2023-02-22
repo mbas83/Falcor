@@ -115,5 +115,7 @@ private:
     bool mRenderShadowMap = false;
 
     std::array<float4,6> mipBiasVals{float4(0.f)};
+
+    uint mFrameCount = 0;
 };
 
