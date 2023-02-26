@@ -113,8 +113,9 @@ private:
 
     uint mRenderSMIndex = 0, mRenderMipLevel = 0;
     bool mRenderShadowMap = false;
+    Sampler::SharedPtr mpRenderSMSampler;
 
-    std::array<float4,6> mipBiasVals{float4(001.f)};
+    std::array<float4,6> mipBiasVals{float4(0.01f)};
 
     uint mFrameCount = 0;
 };

@@ -413,6 +413,13 @@ DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), mDepthBias(0.05f)
         BlendState::BlendFunc::Zero);
     mpRenderShadowTexturePass->getState()->setBlendState(BlendState::create(overwriteBlend));
     mpRenderShadowTexturePass->getState()->setDepthStencilState(DepthStencilState::create(dsDesc));
+
+    // sampler for showing SM content on screen
+    Sampler::Desc desc;
+    desc.setAddressingMode(Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp, Sampler::AddressMode::Clamp);
+    desc.setReductionMode(Sampler::ReductionMode::Standard);
+    desc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point);
+    mpRenderSMSampler = Sampler::create(desc);
 }
 
 void DeferredRenderer::preGenerateUAVS()
@@ -460,15 +467,19 @@ void DeferredRenderer::executeAmbientLightPass(RenderContext* pRenderContext, co
 
 void DeferredRenderer::executeDrawShadowMap(RenderContext* pRenderContext, const RenderData& renderData)
 {
-    float width = (float) mpFbo->getWidth();
-    float height = (float) mpFbo->getHeight();
+    float width = (float)mpFbo->getWidth();
+    float height = (float)mpFbo->getHeight();
 
-    GraphicsState::Viewport lowerRight(width*0.7f, height*0.85f, width*0.3f, height*0.15f, 0.f, 1.f);
-    
-    mpRenderShadowTexturePass->getVars()["gShadowMap"].setUav(mpShadowMapTextures[mRenderSMIndex]->getUAV(mRenderMipLevel));
+    GraphicsState::Viewport lowerRight(width * 0.7f, height * 0.85f, width * 0.3f, height * 0.15f, 0.f, 1.f);
+
+    //mpRenderShadowTexturePass->getVars()["gShadowMap"].setUav(mpShadowMapTextures[mRenderSMIndex]->getUAV(mRenderMipLevel));
+
+    mpRenderShadowTexturePass->getVars()["gShadowMap"].setSrv(mpShadowMapTextures[mRenderSMIndex]->getSRV(mRenderMipLevel,1));
+    mpRenderShadowTexturePass->getVars()->setSampler("gSampler", mpRenderSMSampler);
 
     // write into output texture
     mpRenderShadowTexturePass->getState()->setViewport(0, lowerRight, true);
+        
 
     mpRenderShadowTexturePass->execute(pRenderContext, mpFbo, false);
 }
