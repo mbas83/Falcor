@@ -122,8 +122,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     //Output
     mpVars["gDebug"] = renderData[kDebug]->asTexture();
 
-    mpVars["gFrameCount"] = mFrameCount++;
-    mpVars["PerFrameCB"]["gConstantBias"] = mDepthBias;
+    mpVars["PerFrameCB"]["gFrameCount"] = mFrameCount++;
     mpVars["PerFrameCB"]["viewportDims"] = float2(mpFbo->getWidth(), mpFbo->getHeight());
     // TODO: test: depth bias
     mpVars["PerFrameCB"]["gMipBias"].setBlob(mipBiasVals.data(), sizeof(float4) * 6);
@@ -231,13 +230,18 @@ void DeferredRenderer::renderUI(Gui::Widgets& widget)
     std::string memstring("TileHeap GPU Memory:" + std::to_string(usedMemoryInMB) + "MB/" + std::to_string(heapSizeInMB) + "MB");
     widget.text(memstring);
 
-    widget.var("Constant Bias", mDepthBias, 0.f, FLT_MAX, 0.001f);
-    widget.var("Bias Mip 0", mipBiasVals[0].x, 0.f, 5.f, 0.01f);
-    widget.var("Bias Mip 1", mipBiasVals[1].x, 0.f, 5.f, 0.01f);
-    widget.var("Bias Mip 2", mipBiasVals[2].x, 0.f, 5.f, 0.01f);
-    widget.var("Bias Mip 3", mipBiasVals[3].x, 0.f, 5.f, 0.01f);
-    widget.var("Bias Mip 4", mipBiasVals[4].x, 0.f, 5.f, 0.01f);
-    widget.var("Bias Mip 5", mipBiasVals[5].x, 0.f, 5.f, 0.01f);
+    widget.var("Constant Bias Mip 0 ", mipBiasVals[0].x, 0.f, 5.f, 0.001f);
+    widget.var("Slope Bias Mip 0", mipBiasVals[0].y, 0.f, 5.f, 0.001f);
+    widget.var("Constant Bias Mip 1", mipBiasVals[1].x, 0.f, 5.f, 0.001f);
+    widget.var("Slope Bias Mip 1", mipBiasVals[1].y, 0.f, 5.f, 0.001f);
+    widget.var("Constant Bias Mip 2", mipBiasVals[2].x, 0.f, 5.f, 0.001f);
+    widget.var("Slope Bias Mip 2", mipBiasVals[2].y, 0.f, 5.f, 0.001f);
+    widget.var("Constant Bias Mip 3", mipBiasVals[3].x, 0.f, 5.f, 0.001f);
+    widget.var("Slope Bias Mip 3", mipBiasVals[3].y, 0.f, 5.f, 0.001f);
+    widget.var("Constant Bias Mip 4", mipBiasVals[4].x, 0.f, 5.f, 0.001f);
+    widget.var("Slope Bias Mip 4", mipBiasVals[4].y, 0.f, 5.f, 0.001f);
+    widget.var("Constant Bias Mip 5", mipBiasVals[5].x, 0.f, 5.f, 0.001f);
+    widget.var("Slope Bias Mip 5", mipBiasVals[5].y, 0.f, 5.f, 0.001f);
 }
 
 void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)

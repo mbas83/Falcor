@@ -13,7 +13,6 @@ import ShadingHelper;
 cbuffer PerFrameCB
 {
     uint gFrameCount;
-    float gConstantBias;
     float2 viewportDims;
     float4 gMipBias[6];
 };
@@ -217,11 +216,11 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     float shadowFactor = 1.0f;
         
 
-    //TODO: calc bias from mip level?
-    float mipLvlBias = gMipBias[mipLevel].x;
-    //float baseBias = 0.02;
+    // calc bias from mip level
+    float constBias = gMipBias[mipLevel].x;
+    float slopeBias = gMipBias[mipLevel].y;
     //float mipLvlBias = baseBias * pow(2,mipLevel);
-    float bias = gConstantBias + (mipLvlBias * max(1.0f - dot(normal, direction), 0.05f));
+    float bias = constBias + (slopeBias * max(1.0f - dot(normal, direction),0.001f));
 
 
     float currentDepth = dist;
@@ -271,16 +270,16 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     //TODO : Randomly discarding feedback results in less with the following method
     //return (uint3(h, h >> 8, h >> 16) & 0xff) / 255.f;
-    int seed = pixelCoord.x^pixelCoord.y^gFrameCount;
-    int rand = (jenkinsHash(seed) & 0xFF) / 255.0f;
+    //int seed = pixelCoord.x^pixelCoord.y^gFrameCount;
+    //int rand = (jenkinsHash(seed) & 0xFF) / 255.0f;
     //if(rand > 0.95f){}
 
+    //Write Feedback
     // assumes no packed mips, feedback map has dimensions (size_x/TILE_WIDTH, size_y/TILE_HEIGHT) 
     uint feedbackTexArrayIndex = MIPCOUNT * lightIndex + mipLevel;
     uint2 feedback_coord = uint2(shadowMapCoord / uint2(TILE_WIDTH, TILE_HEIGHT));
     gFeedbackMaps[NonUniformResourceIndex(feedbackTexArrayIndex)][feedback_coord] = 0xFF;
-    
-    
+        
 
     gDebug[pixelCoord] = float4(gMipColor[mipLevel]);
 

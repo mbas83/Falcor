@@ -33,4 +33,3 @@ float calcLod2(float2 dX, float2 dY){
 }
 
 
-static const float mipBias[6] = { 0.04, 0.06, 0.1, 0.14, 0.17, 0.3 };
