@@ -35,15 +35,13 @@ namespace Falcor {
         // return size of heap
         auto getHeapSizeInBytes() const { return mHeapAllocator.getHeapSizeInBytes(); }
         // return currently used memory of tile heap in Bytes
-        auto getCurrentlyUsedMemory() const { return mNumTilesMappedToMemory * D3D12_TILED_RESOURCE_TILE_SIZE_IN_BYTES;}
+        auto getCurrentlyUsedMemory() const { return mNumTilesMappedToMemory * D3D12_TILED_RESOURCE_TILE_SIZE_IN_BYTES; }
 
-        // TODO: test copying texture data first
-        std::unique_ptr<UINT[]> mTextureReadbackPtr;
 
     private:
-        
+
         TileUpdateManager(const std::vector<FeedbackTexture::SharedPtr>& feedbackTextures, const std::vector<TiledTexture::SharedPtr>& shadowMaps, UINT
-                          heapSizeInTiles, RenderContext* renderContext, uint numPreAlloactedMips);
+            heapSizeInTiles, RenderContext* renderContext, uint numPreAlloactedMips);
 
         // copy data from feedback texture to readback buffer
         void resolveFeedback(UINT feedbackIndex, UINT subResourceIndex) const;
@@ -144,7 +142,7 @@ namespace Falcor {
         std::vector<TileMappingState> mTileMappingStates;
 
         // time delay for eviction in seconds
-        UINT mEvictionTime = 2;
+        UINT mEvictionTime = 3;
 
         // manager for tile heap
         HeapAllocationManager mHeapAllocator;

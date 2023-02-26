@@ -36,14 +36,6 @@ namespace Falcor {
         }
 
 
-        // use fence to wait for GPU to copy feedback tex data into readback buffer
-        //mReadbackFence[shadowMapIndex]->gpuSignal(mpRenderContext->getLowLevelData()->getCommandQueue());
-
-        //mpRenderContext->flush(false);
-
-        //mReadbackFence[shadowMapIndex]->syncCpu();
-
-
         // read feedback texture and add tiles to pending tile list
         for (UINT subresourceIndex = 0; subresourceIndex < mNumUsedMipsForFeedback; ++subresourceIndex)
         {
@@ -492,6 +484,9 @@ namespace Falcor {
                     &heapOffsets[0],
                     &oneTileCount[0], //map a tile to a specified location in heap (can be the case that following tiles not consecutively in heap)
                     D3D12_TILE_MAPPING_FLAG_NONE);
+
+                //count mapped tiles
+                mNumTilesMappedToMemory += numTiles;
 
 
             }

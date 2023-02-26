@@ -254,7 +254,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
     constexpr uint maxMipCount = 6;
 
     // only use level 0 to numUsedMipsForFeedback-1 for feedback, other mips always allocated
-    constexpr uint numPreAllocateHighestMips = 0;
+    constexpr uint numPreAllocateHighestMips = 2;
     
 
     if (mpScene)
