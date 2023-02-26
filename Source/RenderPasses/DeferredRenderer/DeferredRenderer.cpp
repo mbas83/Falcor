@@ -254,7 +254,8 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
     constexpr uint maxMipCount = 6;
 
     // only use level 0 to numUsedMipsForFeedback-1 for feedback, other mips always allocated
-    constexpr uint numUsedMipsForFeedback = 0;
+    constexpr uint numPreAllocateHighestMips = 0;
+    
 
     if (mpScene)
     {
@@ -336,7 +337,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         uint heapsize = numLights * mpShadowMapTextures[0]->getNumTilesTotal();
 
         // create heap and heap tile manager
-        mpTileUpdateManager = TileUpdateManager::createTileUpdateManager(mpFeedbackTextures, mpShadowMapTextures, heapsize, pRenderContext);
+        mpTileUpdateManager = TileUpdateManager::createTileUpdateManager(mpFeedbackTextures, mpShadowMapTextures, heapsize, pRenderContext, numPreAllocateHighestMips);
 
 
         // add defines for shadow map access
@@ -347,7 +348,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
         // assume no packed mips because feedback texture access in shader relies on it
         FALCOR_ASSERT(numStandardMips == numShadowMips);
-
+        FALCOR_ASSERT(numPreAllocateHighestMips < numStandardMips);
 
         defines.add("TILE_WIDTH", std::to_string(tileWidth));
         defines.add("TILE_HEIGHT", std::to_string(tileHeight));

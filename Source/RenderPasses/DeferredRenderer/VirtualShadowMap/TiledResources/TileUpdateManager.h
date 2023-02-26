@@ -21,7 +21,7 @@ namespace Falcor {
         using WeakConstPtr = std::weak_ptr<const TileUpdateManager>;
 
         static SharedPtr createTileUpdateManager(const std::vector<FeedbackTexture::SharedPtr>& feedbackTex, const std::vector<TiledTexture::SharedPtr>& tiledTex, UINT
-            heapSize, RenderContext* renderContext);
+            heapSize, RenderContext* renderContext, UINT numPreAllocatedMips);
 
         // read feedback and add tile request for all shadow maps
         void processFeedback();
@@ -41,9 +41,9 @@ namespace Falcor {
         std::unique_ptr<UINT[]> mTextureReadbackPtr;
 
     private:
-
+        
         TileUpdateManager(const std::vector<FeedbackTexture::SharedPtr>& feedbackTextures, const std::vector<TiledTexture::SharedPtr>& shadowMaps, UINT
-            heapSizeInTiles, RenderContext* renderContext);
+                          heapSizeInTiles, RenderContext* renderContext, uint numPreAlloactedMips);
 
         // copy data from feedback texture to readback buffer
         void resolveFeedback(UINT feedbackIndex, UINT subResourceIndex) const;
@@ -63,6 +63,9 @@ namespace Falcor {
         // clear new mapped tiles to zero
         void clearUnmappedTiles(UINT shadowMapIndex) const;
 
+        // map tiles of mips to heap
+        void preAllocateMips(UINT numPreAllocatedMips);
+
         // list to track tiles that should be (un)loaded for each shadow map
         std::vector<std::vector< D3D12_TILED_RESOURCE_COORDINATE>> mPendingTiles;
         std::vector<std::vector< D3D12_TILED_RESOURCE_COORDINATE>> mEvictTiles;
@@ -77,6 +80,7 @@ namespace Falcor {
 
         // number of used mip levels
         UINT mNumStandardMips;
+        // number of used mip levels for feedback ,others are pre-allocated
         UINT mNumUsedMipsForFeedback;
 
         // number of tiles currently mapped to memory
@@ -140,7 +144,7 @@ namespace Falcor {
         std::vector<TileMappingState> mTileMappingStates;
 
         // time delay for eviction in seconds
-        UINT mEvictionTime = 5;
+        UINT mEvictionTime = 2;
 
         // manager for tile heap
         HeapAllocationManager mHeapAllocator;

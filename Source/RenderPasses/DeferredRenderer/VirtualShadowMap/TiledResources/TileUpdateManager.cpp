@@ -9,9 +9,9 @@
 namespace Falcor {
 
     TileUpdateManager::SharedPtr TileUpdateManager::createTileUpdateManager(const std::vector<FeedbackTexture::SharedPtr>& feedbackTex, const std::vector<TiledTexture::SharedPtr>& tiledTex, UINT
-        heapSize, RenderContext* renderContext)
+        heapSize, RenderContext* renderContext, UINT numPreAllocatedMips)
     {
-        auto pManager = SharedPtr(new TileUpdateManager(feedbackTex, tiledTex, heapSize, renderContext));
+        auto pManager = SharedPtr(new TileUpdateManager(feedbackTex, tiledTex, heapSize, renderContext, numPreAllocatedMips));
         return pManager;
     }
 
@@ -30,7 +30,7 @@ namespace Falcor {
         mpRenderContext->resourceBarrier(mFeedbackTextures[shadowMapIndex].get(), Resource::State::CopySource);
 
 
-        for (UINT mipLevel = 0; mipLevel < mNumStandardMips; ++mipLevel)
+        for (UINT mipLevel = 0; mipLevel < mNumUsedMipsForFeedback; ++mipLevel)
         {
             resolveFeedback(shadowMapIndex, mipLevel);
         }
@@ -45,7 +45,7 @@ namespace Falcor {
 
 
         // read feedback texture and add tiles to pending tile list
-        for (UINT subresourceIndex = 0; subresourceIndex < mNumStandardMips; ++subresourceIndex)
+        for (UINT subresourceIndex = 0; subresourceIndex < mNumUsedMipsForFeedback; ++subresourceIndex)
         {
             UINT8* pReadbackBufferData = mMappedShadowMaps[shadowMapIndex][subresourceIndex];
 
@@ -157,7 +157,7 @@ namespace Falcor {
     {
         for (UINT feedbackIndex = 0; feedbackIndex < mNumShadowMaps; ++feedbackIndex)
         {
-            for (UINT i = 0; i < mNumStandardMips; ++i) {
+            for (UINT i = 0; i < mNumUsedMipsForFeedback; ++i) {
                 mpRenderContext->clearRtv(mFeedbackTextures[feedbackIndex]->getRTV(i).get(), float4(0));
             }
         }
@@ -167,7 +167,7 @@ namespace Falcor {
     {
         auto clear = float4(0);
         std::vector<std::vector<D3D12_RECT>> clearRectangles;
-        clearRectangles.resize(mNumStandardMips);
+        clearRectangles.resize(mNumUsedMipsForFeedback);
         auto tiling = mShadowMaps[shadowMapIndex]->getTiling();
         auto tileWidth = mShadowMaps[shadowMapIndex]->getTileTexelWidth();
         auto tileHeight = mShadowMaps[shadowMapIndex]->getTileTexelHeight();
@@ -181,7 +181,7 @@ namespace Falcor {
             clearRectangles[tileCoord.Subresource].emplace_back(rect);
         }
 
-        for (UINT i = 0; i < mNumStandardMips; ++i)
+        for (UINT i = 0; i < mNumUsedMipsForFeedback; ++i)
         {
             UINT clearRectCount = static_cast<UINT>(clearRectangles[i].size());
 
@@ -203,7 +203,7 @@ namespace Falcor {
 
                 //TODO: fix bug: when using (too many?) rectangles -> nvwgf2umx.dll: "Stack cookie instrumentation code detected a stack-based buffer overrun." (maybe too many?)
                 mpRenderContext->clearUAV(pUav.get(), float4(0));
-                
+
 
                 /* if clearing more than x rects at once -> nvwgf2umx.dll: "Stack cookie instrumentation code detected a stack-based buffer overrun."
                 // for now clear maximum of 64 at once
@@ -221,8 +221,9 @@ namespace Falcor {
 
     }
 
+
     TileUpdateManager::TileUpdateManager(const std::vector<FeedbackTexture::SharedPtr>& feedbackTextures, const std::vector<TiledTexture::SharedPtr>& shadowMaps, UINT
-        heapSizeInTiles, RenderContext* renderContext) :
+        heapSizeInTiles, RenderContext* renderContext, uint numPreAlloactedMips) :
         mFeedbackTextures(feedbackTextures), mShadowMaps(shadowMaps), mNumShadowMaps(static_cast<UINT>(shadowMaps.size())),
         mNumTilesMappedToMemory(0), mpRenderContext(renderContext), mHeapAllocator(heapSizeInTiles)
     {
@@ -232,26 +233,28 @@ namespace Falcor {
 
         mNumStandardMips = mShadowMaps[0]->getPackedMipInfo().NumStandardMips;
 
+        mNumUsedMipsForFeedback = mNumStandardMips - numPreAlloactedMips;
+
         mTileMappingStates.resize(mNumShadowMaps);
         for (auto& states : mTileMappingStates)
         {
-            states.init(mNumStandardMips, tiling);
+            states.init(mNumUsedMipsForFeedback, tiling);
         }
 
-        mLayouts.resize(mNumStandardMips);
+        mLayouts.resize(mNumUsedMipsForFeedback);
         mPendingTiles.resize(mNumShadowMaps);
         mEvictTiles.resize(mNumShadowMaps);
         mReadbackBuffers.resize(mNumShadowMaps);
         for (auto& buf : mReadbackBuffers)
         {
-            buf.resize(mNumStandardMips);
+            buf.resize(mNumUsedMipsForFeedback);
         }
 
         // create readback heaps for every feedback tex
         for (UINT feedbackIndex = 0; feedbackIndex < mNumShadowMaps; ++feedbackIndex) {
 
             // create readback heap for every standard mip level
-            for (UINT subresourceIndex = 0; subresourceIndex < mNumStandardMips; ++subresourceIndex)
+            for (UINT subresourceIndex = 0; subresourceIndex < mNumUsedMipsForFeedback; ++subresourceIndex)
             {
                 const auto srcCopyDesc = mFeedbackTextures[feedbackIndex]->getApiHandle()->GetDesc();
                 UINT64 totalResourceSize = 0;
@@ -341,14 +344,18 @@ namespace Falcor {
         // get mapping for each shadow map
         for (size_t shadowMapIndex = 0; shadowMapIndex < mNumShadowMaps; ++shadowMapIndex)
         {
-            for (UINT subresourceIndex = 0; subresourceIndex < mNumStandardMips; ++subresourceIndex)
+            for (UINT subresourceIndex = 0; subresourceIndex < mNumUsedMipsForFeedback; ++subresourceIndex)
             {
-                assert(mNumStandardMips == 6);
                 UINT8* pReadbackBufferData = nullptr;
 
                 FALCOR_D3D_CALL(mReadbackBuffers[shadowMapIndex][subresourceIndex]->Map(0, nullptr, reinterpret_cast<void**>(&pReadbackBufferData)));
                 mMappedShadowMaps[shadowMapIndex][subresourceIndex] = pReadbackBufferData;
             }
+        }
+
+        if (numPreAlloactedMips)
+        {
+            preAllocateMips(numPreAlloactedMips);
         }
 
     }
@@ -453,4 +460,42 @@ namespace Falcor {
         }
 
     }
+
+    void TileUpdateManager::preAllocateMips(UINT numPreAllocatedMips)
+    {
+        // allocate numPreAllocatedMips for each texture
+        for (size_t shadowMapIndex = 0; shadowMapIndex < mNumShadowMaps; ++shadowMapIndex)
+        {
+            for (UINT mipIndex = 0; mipIndex < numPreAllocatedMips; ++mipIndex)
+            {
+                UINT mipLevel = mNumStandardMips - mipIndex - 1;
+
+                //mipIndex 0 -> highest mip (lowest resolution)
+                // get offset of free heap tiles and updates state of the heap allocator
+                auto tiling = mShadowMaps[shadowMapIndex]->getTiling()[mipLevel];
+                UINT numTiles = tiling.HeightInTiles * tiling.HeightInTiles;
+                auto heapOffsets = mHeapAllocator.getFreeHeapIndices(numTiles);
+
+                D3D12_TILED_RESOURCE_COORDINATE mipStartCoordinate{ 0,0,0,mipLevel };
+
+                auto oneTileCount = std::vector<UINT>(numTiles, 1);
+                auto rangeFlags = std::vector<D3D12_TILE_RANGE_FLAGS>(numTiles, D3D12_TILE_RANGE_FLAG_NONE);
+                D3D12_TILE_REGION_SIZE mipRegionSize{ numTiles, false, 0,0,0 };
+
+                mpRenderContext->getLowLevelData()->getCommandQueue()->UpdateTileMappings(mShadowMaps[shadowMapIndex]->getApiHandle(),
+                    1,
+                    &mipStartCoordinate,
+                    &mipRegionSize,
+                    mHeapAllocator.getHeapHandle(),
+                    numTiles,
+                    &rangeFlags[0],
+                    &heapOffsets[0],
+                    &oneTileCount[0], //map a tile to a specified location in heap (can be the case that following tiles not consecutively in heap)
+                    D3D12_TILE_MAPPING_FLAG_NONE);
+
+
+            }
+        }
+    }
+
 }
