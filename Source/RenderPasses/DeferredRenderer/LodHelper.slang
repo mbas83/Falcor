@@ -33,3 +33,14 @@ float calcLod2(float2 dX, float2 dY){
 }
 
 
+// Hash function from "Improved Alpha Testing Using Hashed Sampling"
+float hash(float2 v)
+{
+    return frac(1.0e4 * sin(17.0 * v.x + 0.1 * v.y) * (0.1 + abs(sin(13.0 * v.y + v.x))));
+}
+
+// 3D hash function from "Improved Alpha Testing Using Hashed Sampling"
+float hash3D(float3 v)
+{
+    return hash(float2(hash(v.xy), v.z));
+}

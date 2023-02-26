@@ -39,9 +39,19 @@ extern "C" FALCOR_API_EXPORT const char* getProjDir()
     return PROJECT_DIR;
 }
 
+// pybind to get current memory usage
+static void regDeferredPass(pybind11::module& m)
+{
+    pybind11::class_<DeferredRenderer, RenderPass, DeferredRenderer::SharedPtr> pass(m, "DeferredRenderer");
+
+    pass.def_property_readonly("memoryUsage", &DeferredRenderer::getMemoryUsage);
+}
+
+
 extern "C" FALCOR_API_EXPORT void getPasses(Falcor::RenderPassLibrary & lib)
 {
     lib.registerPass(DeferredRenderer::kInfo, DeferredRenderer::create);
+    ScriptBindings::registerBinding(regDeferredPass);
 }
 
 namespace
@@ -254,7 +264,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
     constexpr uint maxMipCount = 6;
 
     // only use level 0 to numUsedMipsForFeedback-1 for feedback, other mips always allocated
-    constexpr uint numPreAllocateHighestMips = 2;
+    constexpr uint numPreAllocateHighestMips = 0;
     
 
     if (mpScene)
@@ -370,6 +380,8 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
     }
 }
 
+
+
 DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), mDepthBias(0.05f)
 {
     mpState = GraphicsState::create();
@@ -483,4 +495,11 @@ void DeferredRenderer::executeDrawShadowMap(RenderContext* pRenderContext, const
         
 
     mpRenderShadowTexturePass->execute(pRenderContext, mpFbo, false);
+}
+
+
+const float DeferredRenderer::getMemoryUsage() const
+{
+    const float usedMemoryInMB = static_cast<float>(mpTileUpdateManager->getCurrentlyUsedMemory()) / 1000 / 1000;
+    return usedMemoryInMB;
 }

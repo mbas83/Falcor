@@ -57,6 +57,8 @@ public:
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
+    const float getMemoryUsage() const;
+
 private:
     DeferredRenderer();
 

@@ -196,6 +196,8 @@ namespace Falcor {
                 //TODO: fix bug: when using (too many?) rectangles -> nvwgf2umx.dll: "Stack cookie instrumentation code detected a stack-based buffer overrun." (maybe too many?)
                 mpRenderContext->clearUAV(pUav.get(), float4(0));
 
+                //mpRenderContext->getLowLevelData()->getCommandList()->ClearUnorderedAccessViewFloat(gpuHandle, cpuHandle, pUav->getResource()->getApiHandle(), value_ptr(clear), clearRectCount, &clearRectangles[i][0]);
+                //mpRenderContext->setPendingCommands(true);
 
                 /* if clearing more than x rects at once -> nvwgf2umx.dll: "Stack cookie instrumentation code detected a stack-based buffer overrun."
                 // for now clear maximum of 64 at once
