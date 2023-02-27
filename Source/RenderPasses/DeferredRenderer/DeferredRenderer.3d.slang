@@ -271,10 +271,10 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     //TODO : Randomly discarding feedback results in less with the following method
     //return (uint3(h, h >> 8, h >> 16) & 0xff) / 255.f;
     //int seed = pixelCoord.x^pixelCoord.y^gFrameCount;
-    //int rand = (jenkinsHash(seed) & 0xFF) / 255.0f;
-    //if(rand > 0.95f){}
+    //int rand = (hash3D(float3(pixelCoord.x,pixelCoord.y,gFrameCount)) & 0xFF) / 255.0f;
+    //if(rand < 0.95f){}
 
-    //Write Feedback
+    // Write Feedback
     // assumes no packed mips, feedback map has dimensions (size_x/TILE_WIDTH, size_y/TILE_HEIGHT) 
     uint feedbackTexArrayIndex = MIPCOUNT * lightIndex + mipLevel;
     uint2 feedback_coord = uint2(shadowMapCoord / uint2(TILE_WIDTH, TILE_HEIGHT));
