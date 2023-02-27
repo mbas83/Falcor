@@ -27,7 +27,7 @@ namespace Falcor {
         void processFeedback(UINT startIndex, UINT endIndex);
 
         // update tile mapping
-        void updateTiles();
+        void updateTiles(UINT startIndex, UINT endIndex);
 
         // clear feedback texture
         void clearFeedback() const;

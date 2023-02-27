@@ -17,14 +17,10 @@ namespace Falcor {
 
     void TileUpdateManager::processFeedback(UINT startIndex, UINT endIndex)
     {
-        /*for (UINT i = 0; i < mNumShadowMaps; ++i)
-         {
-             readAndApplyFeedback(i);
-         }*/
         for (UINT i = startIndex; i < endIndex; ++i)
-         {
-             readAndApplyFeedback(i);
-         }
+        {
+            readAndApplyFeedback(i);
+        }
     }
 
     void TileUpdateManager::readAndApplyFeedback(UINT shadowMapIndex)
@@ -124,7 +120,7 @@ namespace Falcor {
     // Update Tile Mapping for every shadow map that used feedback
     void TileUpdateManager::updateTiles(UINT startIndex, UINT endIndex)
     {
-        for (UINT shadowMapIndex = 0; shadowMapIndex < mNumShadowMaps; ++shadowMapIndex) {
+        for (UINT shadowMapIndex = startIndex; shadowMapIndex < endIndex; ++shadowMapIndex) {
 
             if (!mPendingTiles[shadowMapIndex].empty())
             {

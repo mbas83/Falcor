@@ -183,8 +183,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     }
 
     // determine used feddback textures for thhe current frame
-    //mStartIndexFeedback = mStartIndexFeedback + 1 % numLights;
-    mEndIndexFeedback = std::max(mStartIndexFeedback + mNumFeedbackReadsPerFrame, numLights);
+    mEndIndexFeedback = std::min(mStartIndexFeedback + mNumFeedbackReadsPerFrame, numLights);
 
     // Feedback processing (Reading from feedback texture and processing data on CPU)
     {
@@ -351,7 +350,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
 
         // heapsize (in tiles) for shadow maps
-        uint heapsize = numLights * mpShadowMapTextures[0]->getNumTilesTotal();
+        uint heapsize = 90 * mpShadowMapTextures[0]->getNumTilesTotal();
 
         // create heap and heap tile manager
         mpTileUpdateManager = TileUpdateManager::createTileUpdateManager(mpFeedbackTextures, mpShadowMapTextures, heapsize, pRenderContext, numPreAllocateHighestMips);
