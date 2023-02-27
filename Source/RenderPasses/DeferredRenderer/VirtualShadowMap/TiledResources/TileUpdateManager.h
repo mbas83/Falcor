@@ -24,7 +24,7 @@ namespace Falcor {
             heapSize, RenderContext* renderContext, UINT numPreAllocatedMips);
 
         // read feedback and add tile request for all shadow maps
-        void processFeedback();
+        void processFeedback(UINT startIndex, UINT endIndex);
 
         // update tile mapping
         void updateTiles();

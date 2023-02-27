@@ -182,15 +182,22 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
         mSaveDebug = false;
     }
 
+    // determine used feddback textures for thhe current frame
+    //mStartIndexFeedback = mStartIndexFeedback + 1 % numLights;
+    mEndIndexFeedback = std::max(mStartIndexFeedback + mNumFeedbackReadsPerFrame, numLights);
+
     // Feedback processing (Reading from feedback texture and processing data on CPU)
     {
         FALCOR_PROFILE("Read and Process Feedback");
-        mpTileUpdateManager->processFeedback();
+        mpTileUpdateManager->processFeedback(mStartIndexFeedback, mEndIndexFeedback);
     }
+
+    mStartIndexFeedback = mEndIndexFeedback % numLights;
+
     // map and unmap tiles
     {
         FALCOR_PROFILE("Update Tiles");
-        mpTileUpdateManager->updateTiles();
+        mpTileUpdateManager->updateTiles(mStartIndexFeedback, mEndIndexFeedback);
     }
     //clear Feedback textures
     {
@@ -265,7 +272,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
     // only use level 0 to numUsedMipsForFeedback-1 for feedback, other mips always allocated
     constexpr uint numPreAllocateHighestMips = 0;
-    
+
 
     if (mpScene)
     {
@@ -382,7 +389,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
 
 
-DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), mDepthBias(0.05f)
+DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), mStartIndexFeedback(0), mEndIndexFeedback(0)
 {
     mpState = GraphicsState::create();
 
@@ -433,6 +440,8 @@ DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), mDepthBias(0.05f)
     desc.setReductionMode(Sampler::ReductionMode::Standard);
     desc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point);
     mpRenderSMSampler = Sampler::create(desc);
+
+    mipBiasVals.fill(float4(0.01f));
 }
 
 void DeferredRenderer::preGenerateUAVS()
@@ -485,14 +494,11 @@ void DeferredRenderer::executeDrawShadowMap(RenderContext* pRenderContext, const
 
     GraphicsState::Viewport lowerRight(width * 0.7f, height * 0.85f, width * 0.3f, height * 0.15f, 0.f, 1.f);
 
-    //mpRenderShadowTexturePass->getVars()["gShadowMap"].setUav(mpShadowMapTextures[mRenderSMIndex]->getUAV(mRenderMipLevel));
-
-    mpRenderShadowTexturePass->getVars()["gShadowMap"].setSrv(mpShadowMapTextures[mRenderSMIndex]->getSRV(mRenderMipLevel,1));
+    mpRenderShadowTexturePass->getVars()["gShadowMap"].setSrv(mpShadowMapTextures[mRenderSMIndex]->getSRV(mRenderMipLevel, 1));
     mpRenderShadowTexturePass->getVars()->setSampler("gSampler", mpRenderSMSampler);
 
     // write into output texture
     mpRenderShadowTexturePass->getState()->setViewport(0, lowerRight, true);
-        
 
     mpRenderShadowTexturePass->execute(pRenderContext, mpFbo, false);
 }

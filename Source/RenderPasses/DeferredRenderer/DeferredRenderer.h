@@ -86,16 +86,14 @@ private:
     // color for mip levels
     Texture::SharedPtr mipColorTex;
 
-    // shadow mapping bias 
-    float mDepthBias;
-
     // for writing texture to file
     int lightIndexToWrite = 0;
     int mipLevelToWrite = 0;
+
     uint numLights;
     uint numShadowMips;
     uint numStandardMips;
-
+    
     bool mSaveDebug = false;
 
     // name of texture in shader for binding
@@ -117,8 +115,11 @@ private:
     bool mRenderShadowMap = false;
     Sampler::SharedPtr mpRenderSMSampler;
 
-    std::array<float4,6> mipBiasVals{float4(0.01f)};
-    
     uint mFrameCount = 0;
+
+    std::array<float4, 6> mipBiasVals;
+    // only process x textures for feedback
+    UINT mNumFeedbackReadsPerFrame = 10;
+    UINT mStartIndexFeedback, mEndIndexFeedback;
 };
 
