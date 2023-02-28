@@ -44,7 +44,7 @@ static void regDeferredPass(pybind11::module& m)
 {
     pybind11::class_<DeferredRenderer, RenderPass, DeferredRenderer::SharedPtr> pass(m, "DeferredRenderer");
 
-    pass.def_property_readonly("memoryUsage", &DeferredRenderer::getMemoryUsage);
+    pass.def_property_readonly("memoryUsage", &DeferredRenderer::getCurrentMemoryUsage);
 }
 
 
@@ -204,13 +204,18 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
         mpTileUpdateManager->clearFeedback();
     }
 
+
+    if (mRenderShadowMap)
     {
-        if (mRenderShadowMap)
-        {
-            FALCOR_PROFILE("Draw Shadow Map");
-            executeDrawShadowMap(pRenderContext, renderData);
-        }
+        FALCOR_PROFILE("Draw Shadow Map");
+        executeDrawShadowMap(pRenderContext, renderData);
     }
+
+    if(mRecordMemoryUsage)
+    {
+        recordMemoryUsage();    
+    }
+
 }
 
 void DeferredRenderer::renderUI(Gui::Widgets& widget)
@@ -225,6 +230,19 @@ void DeferredRenderer::renderUI(Gui::Widgets& widget)
     if (widget.button("Save Debug Tex"))
     {
         mSaveDebug = true;
+    }
+
+    if (widget.button("End Capture Memory Usage"))
+    {
+        mRecordMemoryUsage = false;
+        FileDialogFilterVec filters;
+        filters.push_back({ "csv", "CSV Files" });
+        std::filesystem::path path;
+        if (saveFileDialog(filters, path))
+        {
+            mBenchmarkMemoryOutputFilePath = path.string();
+            outputMemoryUsage();
+        }
     }
 
     widget.slider("LightIndex", lightIndexToWrite, 0, static_cast<int>(mpShadowMapTextures.size()) - 1);
@@ -503,8 +521,39 @@ void DeferredRenderer::executeDrawShadowMap(RenderContext* pRenderContext, const
 }
 
 
-const float DeferredRenderer::getMemoryUsage() const
+
+
+const float DeferredRenderer::getCurrentMemoryUsage() const
 {
     const float usedMemoryInMB = static_cast<float>(mpTileUpdateManager->getCurrentlyUsedMemory()) / 1000 / 1000;
     return usedMemoryInMB;
+}
+
+
+
+void DeferredRenderer::outputMemoryUsage()
+{
+    if (mBenchmarkMemoryOutputFilePath.empty() || mBenchmarkMemoryList.empty()) return;
+
+    std::ofstream file = std::ofstream(mBenchmarkMemoryOutputFilePath, std::ios::trunc);
+
+    if (!file) {
+        reportError(fmt::format("Failed to open file '{}'.", mBenchmarkMemoryOutputFilePath));
+        mBenchmarkMemoryOutputFilePath.clear();
+        return;
+    }
+
+    // Write into file
+    file << "Memory Usage in MB" << std::endl;
+    file << std::fixed << std::setprecision(16);
+    for (size_t i = 0; i < mBenchmarkMemoryList.size(); ++i) {
+        file << mBenchmarkMemoryList[i];
+        file << std::endl;
+    }
+    file.close();
+}
+
+void DeferredRenderer::recordMemoryUsage()
+{
+    mBenchmarkMemoryList.push_back(getCurrentMemoryUsage());
 }

@@ -93,7 +93,7 @@ private:
     uint numLights;
     uint numShadowMips;
     uint numStandardMips;
-    
+
     bool mSaveDebug = false;
 
     // name of texture in shader for binding
@@ -121,5 +121,21 @@ private:
     // only process x textures for feedback
     UINT mNumFeedbackReadsPerFrame = 10;
     UINT mStartIndexFeedback, mEndIndexFeedback;
+
+
+    // Benchmarking
+
+    std::vector<float> mBenchmarkMemoryList;
+
+    std::string mBenchmarkMemoryOutputFilePath;
+
+    void outputMemoryUsage();
+
+    bool mRecordMemoryUsage = false;
+    // use in python script TODO: add pybind
+    void startMemoryUsageCapture() { mBenchmarkMemoryList.reserve(10000);  mRecordMemoryUsage = true; };
+
+    // append current memory usage to list
+    void recordMemoryUsage();
 };
 
