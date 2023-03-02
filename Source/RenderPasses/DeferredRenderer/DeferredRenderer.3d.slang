@@ -114,8 +114,10 @@ Texture1D<float4> gMipColor;
 // Output
 RWTexture2D<float4> gDebug;
 
-// Virtual Shadow Maps
-RWTexture2D<float> gVirtualShadowMaps[(uint)SHADOWTEXTURECOUNT];
+// Virtual Shadow Maps UAVs
+RWTexture2D<float> gVirtualShadowMapUAVs[(uint)SHADOWTEXTURECOUNT];
+//Virtual Shadow Maps SRVs
+Texture2D<float> gVirtualShadowMapSRVs[(uint)LIGHTCOUNT];
 // Feedback Maps
 RWTexture2D<float> gFeedbackMaps[(uint)FEEDBACKTEXTURECOUNT];
 
@@ -183,7 +185,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     uint2 resolution;
     // get dimensions of mip0
-    gVirtualShadowMaps[0].GetDimensions(resolution.x,resolution.y);
+    gVirtualShadowMapUAVs[0].GetDimensions(resolution.x,resolution.y);
 
     // calc the two positions at hit point
     float3 hitPointDx1 = worldPosW  + newRayDiff.getdOdx() / 2;
@@ -207,7 +209,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     const uint shadowTexArrayIndex = MIPCOUNT * lightIndex + mipLevel;
     
     // Update Resolution to chosen mipmap level
-    gVirtualShadowMaps[NonUniformResourceIndex(shadowTexArrayIndex)].GetDimensions(resolution.x,resolution.y);
+    gVirtualShadowMapUAVs[NonUniformResourceIndex(shadowTexArrayIndex)].GetDimensions(resolution.x,resolution.y);
     float2 shadowMapCoord = world_to_latlong_map(-direction) * resolution;
     // ray should always go through center of the shadow map pixel
     float3 pixel_centered_dir = latlong_map_to_world( (floor(shadowMapCoord)+float2(0.5f)) / resolution);
@@ -223,8 +225,9 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
 
     float currentDepth = dist;
-    float closestDepth = gVirtualShadowMaps[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord];
-
+    // read from SRV
+    float closestDepth = gVirtualShadowMapSRVs[lightIndex].Load(uint3(shadowMapCoord,mipLevel));
+    //float closestDepth =gVirtualShadowMapUAVs[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord];
 
     if(closestDepth > 0.0f)
     {
@@ -257,7 +260,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
         }
 
         // save to texture
-        gVirtualShadowMaps[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord] = closestDepth;
+        gVirtualShadowMapUAVs[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord] = closestDepth;
 
         if(currentDepth - bias > closestDepth){
             shadowFactor = 0.0f;

@@ -141,13 +141,20 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     mpVars["PerFrameCB"]["gMipBias"].setBlob(mipBiasVals.data(), sizeof(float4) * 6);
 
 
-    // bind all mip uavs for all lights
+    // bind all shadow map mip UAVs for all lights
     for (uint lightIndex = 0; lightIndex < numLights; ++lightIndex)
     {
         for (uint mipLevel = 0; mipLevel < numShadowMips; ++mipLevel) {
             // index = numMips*lightIndex + mipLevel
-            mpVars["gVirtualShadowMaps"][lightIndex * numShadowMips + mipLevel].setUav(mpShadowMapUAVs[lightIndex][mipLevel]);
+            mpVars["gVirtualShadowMapUAVs"][lightIndex * numShadowMips + mipLevel].setUav(mpShadowMapUAVs[lightIndex][mipLevel]);
         }
+    }
+
+    // bind all shadow map SRVs
+    for (uint lightIndex = 0; lightIndex < numLights; ++lightIndex)
+    {
+        // specific mips are accessed in shader
+        mpVars["gVirtualShadowMapSRVs"][lightIndex] = mpShadowMapTextures[lightIndex]->asTexture();
     }
 
     // bind all feedback texture standard mip uavs
@@ -214,9 +221,9 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
         executeDrawShadowMap(pRenderContext, renderData);
     }
 
-    if(mRecordMemoryUsage)
+    if (mRecordMemoryUsage)
     {
-        recordMemoryUsage();    
+        recordMemoryUsage();
     }
 
 }
