@@ -219,7 +219,6 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     // calc bias from mip level
     float constBias = gMipBias[mipLevel].x;
     float slopeBias = gMipBias[mipLevel].y;
-    //float mipLvlBias = baseBias * pow(2,mipLevel);
     float bias = constBias + (slopeBias * max(1.0f - dot(normal, direction),0.001f));
 
 

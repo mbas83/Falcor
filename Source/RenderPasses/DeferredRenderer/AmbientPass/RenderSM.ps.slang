@@ -15,7 +15,7 @@ float4 mainImage(float2 texC)
         out_color = float3(1.0f,1.0f,0.0f);
     }
     else{
-        out_color = float3(shadowMapValue,0.f,0.f);
+        out_color = float3(shadowMapValue/100,0.f,0.f);
     }
 
 

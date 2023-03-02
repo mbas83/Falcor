@@ -45,6 +45,9 @@ static void regDeferredPass(pybind11::module& m)
     pybind11::class_<DeferredRenderer, RenderPass, DeferredRenderer::SharedPtr> pass(m, "DeferredRenderer");
 
     pass.def_property_readonly("memoryUsage", &DeferredRenderer::getCurrentMemoryUsage);
+    pass.def("startCaptureMemoryUsage", &DeferredRenderer::startCaptureMemoryUsage);
+    pass.def("endCaptureMemoryUsage", &DeferredRenderer::endCaptureMemoryUsage);
+    pass.def("outputCapturedMemoryUsage", &DeferredRenderer::outputMemoryUsage);
 }
 
 

@@ -1,0 +1,3 @@
+
+
+captureTime = 5

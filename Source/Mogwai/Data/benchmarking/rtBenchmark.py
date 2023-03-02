@@ -1,30 +1,40 @@
-#graph = m.activeGraph
-#deferredPass = graph.getPass('DeferredRTShadows')
+from falcor import *
+import json
 
-#m.scene.animated = True
-#m.profiler.enabled = True
-#m.profiler.startCapture()
+# use time in seconds for capturing, fps varies between render passes, change for each scene
+captureTime = 2
 
-#for frame in range(5):
-#    m.renderFrame()
+graph = m.getGraph("PureRTShadows")
+deferredPass = graph.getPass("DeferredRTShadows")
 
-#m.profiler.events["/present/gpuTime"]["value"]
+# capture video, only works wirh RAW??
+#m.videoCapture.outputDir = "D:\\"
+#m.videoCapture.baseFilename = "CapturedVideo"
+#m.videoCapture.codec = Codec.RAW
+#m.videoCapture.fps = 30
+#m.videoCapture.bitrate = 4.0
+#m.videoCapture.gopSize = 10
+#m.videoCapture.addRanges(m.activeGraph, [[1, 200]])
 
-#capture = m.profiler.endCapture()
-#m.profiler.enabled = False
-#meanFrameTime = capture["events"]["/onFrameRender/gpuTime"]["stats"]["mean"]
-#print(meanFrameTime)
+m.clock.stop()
+m.clock.play()
+m.scene.animated = True
 m.profiler.enabled = True
 m.profiler.startCapture()
 
-for frame in range(256):
+
+while m.clock.time < captureTime:
     renderFrame()
-#renderFrame()
 
-capture = m.profiler.endCapture()
+
+capturedData = m.profiler.endCapture()
 m.profiler.enabled = False
-
-print(capture)
+    
+with open('rtBenchmark.json', 'w') as fp:
+    json.dump(capturedData, fp)    
+    
+#m.profiler.events["/present/gpuTime"]["value"]
 
 #meanFrameTime = capture["events"]["/onFrameRender/gpuTime"]["stats"]["mean"]
 #print(meanFrameTime)
+

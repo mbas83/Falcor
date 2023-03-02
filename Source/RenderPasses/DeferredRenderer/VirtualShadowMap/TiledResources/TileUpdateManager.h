@@ -142,7 +142,7 @@ namespace Falcor {
         std::vector<TileMappingState> mTileMappingStates;
 
         // time delay for eviction in seconds
-        UINT mEvictionTime = 3;
+        UINT mEvictionTime = 5;
 
         // manager for tile heap
         HeapAllocationManager mHeapAllocator;

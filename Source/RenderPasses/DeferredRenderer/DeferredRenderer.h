@@ -57,7 +57,12 @@ public:
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
-    const float getMemoryUsage() const;
+    const float getCurrentMemoryUsage() const;
+
+    // use in python script 
+    void startCaptureMemoryUsage() { mBenchmarkMemoryList.reserve(10000);  mRecordMemoryUsage = true; };
+    void endCaptureMemoryUsage() { mRecordMemoryUsage = false; };
+    void outputMemoryUsage();
 
 private:
     DeferredRenderer();
@@ -128,13 +133,10 @@ private:
     std::vector<float> mBenchmarkMemoryList;
 
     std::string mBenchmarkMemoryOutputFilePath;
-
-    void outputMemoryUsage();
+       
 
     bool mRecordMemoryUsage = false;
-    // use in python script TODO: add pybind
-    void startMemoryUsageCapture() { mBenchmarkMemoryList.reserve(10000);  mRecordMemoryUsage = true; };
-
+    
     // append current memory usage to list
     void recordMemoryUsage();
 };
