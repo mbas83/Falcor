@@ -189,7 +189,7 @@ void DeferredRTShadows::setScene(RenderContext* pRenderContext, const Scene::Sha
         VertexLayout::SharedPtr pLayout = VertexLayout::create();
         VertexBufferLayout::SharedPtr pBufLayout = VertexBufferLayout::create();
         pBufLayout->addElement("RADIUSSIZE", 0, ResourceFormat::R32Float, 1, 0);    //radius
-        pBufLayout->addElement("LIGHTINDEX", 1 * sizeof(float), ResourceFormat::R16Uint, 1, 1);    //lightindex
+        pBufLayout->addElement("LIGHTINDEX", 1 * sizeof(float), ResourceFormat::R32Uint, 1, 1);    //lightindex
         pLayout->addBufferLayout(0, pBufLayout);
         
         Vao::BufferVec buffers{ pVB };

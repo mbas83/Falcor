@@ -14,7 +14,7 @@ cbuffer PerFrameCB
 };
 
 struct VsIn{
-    float4 radius : RADIUSSIZE;
+    float radius : RADIUSSIZE;
     uint index : LIGHTINDEX;
 };
 
@@ -31,7 +31,7 @@ VsOut vsMain(VsIn vIn)
     VsOut vsOut;
 
     // pass through
-    vsOut.radius = vIn.radius.x;
+    vsOut.radius = vIn.radius;
     vsOut.index = vIn.index;
         
     vsOut.posH = mul(float4(gScene.getLight(vsOut.index).posW,1.f), gScene.camera.data.viewMat);
