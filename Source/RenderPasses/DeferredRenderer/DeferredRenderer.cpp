@@ -137,7 +137,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
 
     mpVars["PerFrameCB"]["gFrameCount"] = mFrameCount++;
     mpVars["PerFrameCB"]["viewportDims"] = float2(mpFbo->getWidth(), mpFbo->getHeight());
-    // TODO: test: depth bias
+    // bias values
     mpVars["PerFrameCB"]["gMipBias"].setBlob(mipBiasVals.data(), sizeof(float4) * 6);
 
 
@@ -176,8 +176,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
         mpScene->setRaytracingShaderData(pRenderContext, mpVars->getRootVar());
         mpVars->setParameterBlock("gScene", mpScene->getParameterBlock());
 
-        pRenderContext->drawIndirect(mpState.get(), mpVars.get(), 1, mpDrawBuffer.get(), 0, nullptr, 0);
-        //pRenderContext->draw(mpState.get(),mpVars.get(),numLights,0);
+        pRenderContext->draw(mpState.get(),mpVars.get(),numLights,0);
     }
 
     {
@@ -343,18 +342,6 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
         Vao::BufferVec buffers{ pVB };
         mpLightsVao = Vao::create(Vao::Topology::PointList, pLayout, buffers);
 
-        // create draw buffer
-        std::vector<DrawArguments> drawLightPoints;
-
-        DrawArguments draw;
-        draw.VertexCountPerInstance = numLights;
-        draw.InstanceCount = 1;
-        draw.StartVertexLocation = 0;
-        draw.StartInstanceLocation = 0;
-        drawLightPoints.push_back(draw);
-
-        mpDrawBuffer = Buffer::create(sizeof(drawLightPoints[0]) * drawLightPoints.size(), Resource::BindFlags::IndirectArg, Buffer::CpuAccess::None, drawLightPoints.data());
-        mpDrawBuffer->setName("Lights Draw Buffer");
 
         // Texture for LOD colors
         mipColorTex = Texture::create1D(7, ResourceFormat::RGBA8Unorm, 1, 1, getMipColorData().data(), Resource::BindFlags::ShaderResource);

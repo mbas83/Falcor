@@ -227,7 +227,6 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     float currentDepth = dist;
     // read from SRV
     float closestDepth = gVirtualShadowMapSRVs[lightIndex].Load(uint3(shadowMapCoord,mipLevel));
-    //float closestDepth =gVirtualShadowMapUAVs[NonUniformResourceIndex(shadowTexArrayIndex)][shadowMapCoord];
 
     if(closestDepth > 0.0f)
     {

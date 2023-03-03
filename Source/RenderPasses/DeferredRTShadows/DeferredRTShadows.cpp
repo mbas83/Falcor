@@ -126,8 +126,7 @@ void DeferredRTShadows::execute(RenderContext* pRenderContext, const RenderData&
         mpScene->setRaytracingShaderData(pRenderContext, mpVars->getRootVar());
         mpVars->setParameterBlock("gScene", mpScene->getParameterBlock());
 
-        pRenderContext->drawIndirect(mpState.get(), mpVars.get(), 1, mpDrawBuffer.get(), 0, nullptr, 0);
-        //pRenderContext->draw(mpState.get(),mpVars.get(),numLights,0);
+        pRenderContext->draw(mpState.get(),mpVars.get(),numLights,0);
     }
 
     if (mSaveDebug)
@@ -176,7 +175,7 @@ void DeferredRTShadows::setScene(RenderContext* pRenderContext, const Scene::Sha
         {
             PointLightVertex p;
             const auto& lightData = mpScene->getLight(i)->getData();
-            p.radius = 40; //TODO: change radius calculation
+            p.radius = 40; 
             p.lightIndex = i;
             pointLights.emplace_back(p);
         }
@@ -192,23 +191,9 @@ void DeferredRTShadows::setScene(RenderContext* pRenderContext, const Scene::Sha
         pBufLayout->addElement("RADIUSSIZE", 0, ResourceFormat::R32Float, 1, 0);    //radius
         pBufLayout->addElement("LIGHTINDEX", 1 * sizeof(float), ResourceFormat::R16Uint, 1, 1);    //lightindex
         pLayout->addBufferLayout(0, pBufLayout);
-
-
+        
         Vao::BufferVec buffers{ pVB };
         mpLightsVao = Vao::create(Vao::Topology::PointList, pLayout, buffers);
-
-        // create draw buffer
-        std::vector<DrawArguments> drawLightPoints;
-
-        DrawArguments draw;
-        draw.VertexCountPerInstance = numLights;
-        draw.InstanceCount = 1;
-        draw.StartVertexLocation = 0;
-        draw.StartInstanceLocation = 0;
-        drawLightPoints.push_back(draw);
-
-        mpDrawBuffer = Buffer::create(sizeof(drawLightPoints[0]) * drawLightPoints.size(), Resource::BindFlags::IndirectArg, Buffer::CpuAccess::None, drawLightPoints.data());
-        mpDrawBuffer->setName("Lights Draw Buffer");
 
         // Create Program
         mpProgram = GraphicsProgram::create(desc, defines);
