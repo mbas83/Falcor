@@ -21,7 +21,7 @@ struct VsIn{
 struct VsOut{
     float4 posH : SV_POSITION;
 
-    float4 radius : RADIUSSIZE;
+    float radius : RADIUSSIZE;
     uint index: LIGHTINDEX;
 };
 
@@ -31,7 +31,7 @@ VsOut vsMain(VsIn vIn)
     VsOut vsOut;
 
     // pass through
-    vsOut.radius.x = vIn.radius.x;
+    vsOut.radius = vIn.radius.x;
     vsOut.index = vIn.index;
         
     vsOut.posH = mul(float4(gScene.getLight(vsOut.index).posW,1.f), gScene.camera.data.viewMat);
@@ -45,7 +45,7 @@ struct GsOut
 {
     float4 posH : SV_POSITION;
 
-    float4 radius : RADIUSSIZE;
+    float radius : RADIUSSIZE;
     uint index : LIGHTINDEX;
 };
 
@@ -53,10 +53,10 @@ struct GsOut
 void gsMain(point VsOut input[1], inout TriangleStream<GsOut> outStream)
 {
     GsOut gsOut;
-    gsOut.radius.x = input[0].radius.x;
+    gsOut.radius = input[0].radius;
     gsOut.index = input[0].index;
 
-    float radius = input[0].radius.x;
+    float radius = input[0].radius;
 
     const LightData light = gScene.getLight(gsOut.index);
 
@@ -112,7 +112,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 {
     float3 out_color;
 
-    float radius = gsOut.radius.x;
+    float radius = gsOut.radius;
 
     int2 pixelCoord = gsOut.posH.xy;
     uint lightIndex = gsOut.index;
