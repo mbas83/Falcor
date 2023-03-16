@@ -147,7 +147,6 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     // physically incorrect attenuation (but this gives the point light an actual radius)
     float3 incomingRadiance = getLightRadiance(worldPosW, lightData);
 
-    //float t =  lerp( (normal.z+1)/2, 0.2,0.1);
     float NdotL = saturate(dot(normal, direction));  
     const float shininess = 5.0;
 

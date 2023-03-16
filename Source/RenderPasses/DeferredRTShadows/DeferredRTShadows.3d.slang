@@ -132,16 +132,14 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     //calc shading------------------------------------------------------------------------------------
     // physically incorrect attenuation (but this gives the point light an actual radius)
-    //float attenuation = pow(1.0 - pow(dist / radius, 2.0), 2.0);
-    // use correct attenuation
-    //attenuation = 1.f / (dist*dist);
-
     float3 incomingRadiance = getLightRadiance(worldPosW, lightData);
 
-    float t =  lerp( (normal.z+1)/2, 0.2,0.1);
     float NdotL = saturate(dot(normal, direction));  
     const float shininess = 5.0;
-    out_color =  (diffuseColor + (pow(NdotL, shininess) * specularColor)) * incomingRadiance * t;     
+
+    float3 diffuseColorTerm = diffuseColor * incomingRadiance  * NdotL;
+    float3 specularColorTerm = specularColor * incomingRadiance * pow(NdotL, shininess);
+    out_color =  diffuseColorTerm + specularColorTerm;         
    
 
    // calc shadow----------------------------------------------------------------------------------
