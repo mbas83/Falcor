@@ -45,27 +45,7 @@ namespace Falcor {
             UINT width = tiling[subresourceIndex].WidthInTiles;
             UINT height = tiling[subresourceIndex].HeightInTiles;
             const auto rowPitch = mLayouts[subresourceIndex].Footprint.RowPitch;
-
-
-            //TODO: test if copying everything first is faster? -> create UINT8 array with maximum size (https://github.com/microsoft/DirectXTK12/blob/c17a8a211678bee71e3ba4ca19a0c58223be0f28/Src/ScreenGrab.cpp#L407)
-            // must copy row by row
-            //auto dptr = mTextureReadbackPtr.get();
-            /* for (UINT h = 0; h < height; ++h)
-            {
-                memcpy(dptr, pReadbackBufferData, width*sizeof(UINT));
-                pReadbackBufferData += rowPitch;
-                dptr += width;
-            }
-
-
-            // Unmap texture, range (0,0) indicates that CPU did not write any data
-            D3D12_RANGE emptyRange{ 0, 0 };
-            mReadbackBuffers[shadowMapIndex][subresourceIndex]->Unmap
-            (
-                0,
-                &emptyRange
-            );*/
-
+                       
 
             for (UINT y = 0; y < height; ++y)
             {
@@ -193,14 +173,14 @@ namespace Falcor {
                 D3D12DescriptorSet::GpuHandle gpuHandle = pSet->getGpuHandle(0);
                 gpDevice->getApiHandle()->CopyDescriptorsSimple(1, dstHandle, cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-                //TODO: fix bug: when using (too many?) rectangles -> nvwgf2umx.dll: "Stack cookie instrumentation code detected a stack-based buffer overrun." (maybe too many?)
+                //
                 mpRenderContext->clearUAV(pUav.get(), float4(0));
 
                 //mpRenderContext->getLowLevelData()->getCommandList()->ClearUnorderedAccessViewFloat(gpuHandle, cpuHandle, pUav->getResource()->getApiHandle(), value_ptr(clear), clearRectCount, &clearRectangles[i][0]);
                 //mpRenderContext->setPendingCommands(true);
 
                 /* if clearing more than x rects at once -> nvwgf2umx.dll: "Stack cookie instrumentation code detected a stack-based buffer overrun."
-                // for now clear maximum of 64 at once
+                 * also using rects have no effect
                 constexpr int numMaxClearsAtOnce = 64;
                 int toClear = clearRectCount;
                 int currentIndex = 0;
@@ -221,8 +201,6 @@ namespace Falcor {
         mFeedbackTextures(feedbackTextures), mShadowMaps(shadowMaps), mNumShadowMaps(static_cast<UINT>(shadowMaps.size())),
         mNumTilesMappedToMemory(0), mpRenderContext(renderContext), mHeapAllocator(heapSizeInTiles)
     {
-
-
         auto tiling = mShadowMaps[0]->getTiling();
 
         mNumStandardMips = mShadowMaps[0]->getPackedMipInfo().NumStandardMips;

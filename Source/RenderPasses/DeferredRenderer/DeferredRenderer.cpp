@@ -67,9 +67,7 @@ namespace
     const std::string kDiffuse = "diffuse";
     const std::string kSpecular = "specular";
     const std::string kTexGrad = "texGrad";
-
-    //const std::string kDebug = "debug";
-
+    
     const Falcor::ChannelList kInputChannels =
     {
         { kPosW,        "gWorldPos",         "position in world space" },
@@ -109,7 +107,6 @@ RenderPassReflection DeferredRenderer::reflect(const CompileData& compileData)
     addRenderPassInputs(reflector, kInputChannels);
 
     reflector.addOutput(kOut, "Final color of deferred renderer");
-    //reflector.addOutput(kDebug, "debug tex").format(ResourceFormat::RGBA32Float);
     return reflector;
 }
 
@@ -121,8 +118,6 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     pRenderContext->clearFbo(mpFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mpState->setFbo(mpFbo);
 
-    //pRenderContext->clearTexture(renderData[kDebug]->asTexture().get());
-
     if (!mpScene) return;
 
     // GBuffer Input
@@ -131,11 +126,6 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     mpVars["gDiffuse"] = renderData[kDiffuse]->asTexture();
     mpVars["gSpecular"] = renderData[kSpecular]->asTexture();
     mpVars["gTexGrad"] = renderData[kTexGrad]->asTexture();
-
-    //Output
-    //mpVars["gDebug"] = renderData[kDebug]->asTexture();
-    // bind mip color texture
-    //mpVars["gMipColor"] = mipColorTex->asTexture();
 
     mpVars["PerFrameCB"]["gFrameCount"] = mFrameCount++;
     mpVars["PerFrameCB"]["viewportDims"] = float2(mpFbo->getWidth(), mpFbo->getHeight());
@@ -168,7 +158,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
         }
     }
 
-    
+
 
     {
         FALCOR_PROFILE("drawLights");
@@ -399,7 +389,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
 
 
-DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), mStartIndexFeedback(0), mEndIndexFeedback(0)
+DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), numLights(0), numShadowMips(0), numStandardMips(0), mStartIndexFeedback(0), mEndIndexFeedback(0)
 {
     mpState = GraphicsState::create();
 
@@ -479,7 +469,7 @@ void DeferredRenderer::preGenerateUAVS()
     }
 }
 
-void DeferredRenderer::executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData)
+void DeferredRenderer::executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData) const
 {
     // iResolution
     float width = (float)mpFbo->getWidth();
@@ -497,7 +487,7 @@ void DeferredRenderer::executeAmbientLightPass(RenderContext* pRenderContext, co
 }
 
 
-void DeferredRenderer::executeDrawShadowMap(RenderContext* pRenderContext, const RenderData& renderData)
+void DeferredRenderer::executeDrawShadowMap(RenderContext* pRenderContext, const RenderData& renderData) const
 {
     float width = (float)mpFbo->getWidth();
     float height = (float)mpFbo->getHeight();
@@ -525,7 +515,7 @@ const float DeferredRenderer::getCurrentMemoryUsage() const
 
 
 void DeferredRenderer::outputMemoryUsage()
-{ 
+{
     if (mBenchmarkMemoryOutputFilePath.empty() || mBenchmarkMemoryList.empty()) return;
 
     std::ofstream file = std::ofstream(mBenchmarkMemoryOutputFilePath, std::ios::trunc);

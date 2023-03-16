@@ -5,11 +5,6 @@ static const float kAmbientValue = 0.05f;
 
 
 float3 getLightRadiance(const float3 shadingPosW, const LightData light){
-
-    // Get the position and normal.
-    //ls.posW = light.posW;
-    //ls.normalW = light.dirW;
-
     // Compute direction and distance to light.
     // The distance is clamped to a small epsilon to avoid div-by-zero below.
     float3 toLight = light.posW - shadingPosW;

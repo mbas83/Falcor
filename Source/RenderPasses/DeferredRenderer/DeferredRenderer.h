@@ -113,8 +113,8 @@ private:
     FullScreenPass::SharedPtr mpAmbientLightPass;
     FullScreenPass::SharedPtr mpRenderShadowTexturePass;
 
-    void executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData);
-    void executeDrawShadowMap(RenderContext* pRenderContext, const RenderData& renderData);
+    void executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData) const;
+    void executeDrawShadowMap(RenderContext* pRenderContext, const RenderData& renderData) const;
 
     uint mRenderSMIndex = 0, mRenderMipLevel = 0;
     bool mRenderShadowMap = false;
