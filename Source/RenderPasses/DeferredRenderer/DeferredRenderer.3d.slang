@@ -109,10 +109,9 @@ Texture2D<float4> gSpecular;
 Texture2D<float4> gTexGrad;
 
 // LOD level visualisation
-Texture1D<float4> gMipColor;
-
+//Texture1D<float4> gMipColor;
 // Output
-RWTexture2D<float4> gDebug;
+//RWTexture2D<float4> gDebug;
 
 // Virtual Shadow Maps UAVs
 RWTexture2D<float> gVirtualShadowMapUAVs[(uint)SHADOWTEXTURECOUNT];
@@ -204,7 +203,9 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
     float2 ShadowCoordDy = abs(shadowCoordsDy1 - shadowCoordsDy2);
 
 
-    uint mipLevel = (uint) clamp( calcLod(ShadowCoordDx, ShadowCoordDy)-1, 0, MIPCOUNT - 1);
+    uint mipLevel = (uint) clamp( calcLod(ShadowCoordDx, ShadowCoordDy)-2, 0, MIPCOUNT - 1);
+
+
 
     const uint shadowTexArrayIndex = MIPCOUNT * lightIndex + mipLevel;
     
@@ -271,7 +272,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     //Randomly discarding most feedback
     //float rand = hash3D(float3(pixelCoord.x,pixelCoord.y,gFrameCount));
-    //if(rand > 0.8f){
+    //if(rand > 0.7f){
 
 
     // Write Feedback
@@ -282,7 +283,7 @@ float4 psMain(GsOut gsOut) : SV_TARGET0
 
     //}
 
-    gDebug[pixelCoord] = float4(gMipColor[mipLevel]);
+    //gDebug[pixelCoord] = float4(gMipColor[mipLevel]);
 
     return float4(out_color,1);
 }

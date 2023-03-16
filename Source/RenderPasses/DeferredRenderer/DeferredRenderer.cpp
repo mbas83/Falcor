@@ -68,7 +68,7 @@ namespace
     const std::string kSpecular = "specular";
     const std::string kTexGrad = "texGrad";
 
-    const std::string kDebug = "debug";
+    //const std::string kDebug = "debug";
 
     const Falcor::ChannelList kInputChannels =
     {
@@ -109,7 +109,7 @@ RenderPassReflection DeferredRenderer::reflect(const CompileData& compileData)
     addRenderPassInputs(reflector, kInputChannels);
 
     reflector.addOutput(kOut, "Final color of deferred renderer");
-    reflector.addOutput(kDebug, "debug tex").format(ResourceFormat::RGBA32Float);
+    //reflector.addOutput(kDebug, "debug tex").format(ResourceFormat::RGBA32Float);
     return reflector;
 }
 
@@ -121,7 +121,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     pRenderContext->clearFbo(mpFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mpState->setFbo(mpFbo);
 
-    pRenderContext->clearTexture(renderData[kDebug]->asTexture().get());
+    //pRenderContext->clearTexture(renderData[kDebug]->asTexture().get());
 
     if (!mpScene) return;
 
@@ -133,7 +133,9 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
     mpVars["gTexGrad"] = renderData[kTexGrad]->asTexture();
 
     //Output
-    mpVars["gDebug"] = renderData[kDebug]->asTexture();
+    //mpVars["gDebug"] = renderData[kDebug]->asTexture();
+    // bind mip color texture
+    //mpVars["gMipColor"] = mipColorTex->asTexture();
 
     mpVars["PerFrameCB"]["gFrameCount"] = mFrameCount++;
     mpVars["PerFrameCB"]["viewportDims"] = float2(mpFbo->getWidth(), mpFbo->getHeight());
@@ -166,8 +168,8 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
         }
     }
 
-    // bind mip color texture
-    mpVars["gMipColor"] = mipColorTex->asTexture();
+    
+
     {
         FALCOR_PROFILE("drawLights");
 
@@ -176,7 +178,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
         mpScene->setRaytracingShaderData(pRenderContext, mpVars->getRootVar());
         mpVars->setParameterBlock("gScene", mpScene->getParameterBlock());
 
-        pRenderContext->draw(mpState.get(),mpVars.get(),numLights,0);
+        pRenderContext->draw(mpState.get(), mpVars.get(), numLights, 0);
     }
 
     {
@@ -184,12 +186,6 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
         executeAmbientLightPass(pRenderContext, renderData);
     }
 
-    if (mSaveDebug)
-    {
-        auto filename = std::string("D:\\debugTex") + ".pfm";
-        renderData[kDebug]->asTexture()->captureToFile(0, 0, filename, Bitmap::FileFormat::PfmFile, Bitmap::ExportFlags::Uncompressed);
-        mSaveDebug = false;
-    }
 
     // determine used feddback textures for thhe current frame
     mEndIndexFeedback = std::min(mStartIndexFeedback + mNumFeedbackReadsPerFrame, numLights);
@@ -296,7 +292,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
     constexpr uint shadowMapHeight = 8192;
     constexpr uint maxMipCount = 6;
 
-    // only use level 0 to numUsedMipsForFeedback-1 for feedback, other mips always allocated
+    // 0 = no pre-allocated mips, numMips = all Mips, other mips always allocated
     constexpr uint numPreAllocateHighestMips = 0;
 
 
@@ -529,7 +525,7 @@ const float DeferredRenderer::getCurrentMemoryUsage() const
 
 
 void DeferredRenderer::outputMemoryUsage()
-{
+{ 
     if (mBenchmarkMemoryOutputFilePath.empty() || mBenchmarkMemoryList.empty()) return;
 
     std::ofstream file = std::ofstream(mBenchmarkMemoryOutputFilePath, std::ios::trunc);
@@ -541,14 +537,29 @@ void DeferredRenderer::outputMemoryUsage()
     }
 
     // Write into file
-    file << "Memory Usage in MB" << std::endl;
-    file << std::fixed << std::setprecision(16);
-    for (size_t i = 0; i < mBenchmarkMemoryList.size(); ++i) {
-        file << mBenchmarkMemoryList[i];
+    file << std::fixed << std::setprecision(2);
+    for (float i : mBenchmarkMemoryList)
+    {
+        file << i;
         file << std::endl;
     }
     file.close();
 }
+
+void DeferredRenderer::endCaptureMemoryUsage()
+{
+    mRecordMemoryUsage = false;
+    FileDialogFilterVec filters;
+    filters.push_back({ "csv", "CSV Files" });
+    std::filesystem::path path;
+    if (saveFileDialog(filters, path))
+    {
+        mBenchmarkMemoryOutputFilePath = path.string();
+        outputMemoryUsage();
+    }
+}
+
+
 
 void DeferredRenderer::recordMemoryUsage()
 {

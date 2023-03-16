@@ -61,7 +61,7 @@ public:
 
     // use in python script 
     void startCaptureMemoryUsage() { mBenchmarkMemoryList.reserve(10000);  mRecordMemoryUsage = true; };
-    void endCaptureMemoryUsage() { mRecordMemoryUsage = false; };
+    void endCaptureMemoryUsage();
     void outputMemoryUsage();
 
 private:
@@ -124,19 +124,18 @@ private:
 
     std::array<float4, 6> mipBiasVals;
     // only process x textures for feedback
-    UINT mNumFeedbackReadsPerFrame = 10;
     UINT mStartIndexFeedback, mEndIndexFeedback;
-
+    UINT mNumFeedbackReadsPerFrame = 10;
 
     // Benchmarking
 
     std::vector<float> mBenchmarkMemoryList;
 
     std::string mBenchmarkMemoryOutputFilePath;
-       
+
 
     bool mRecordMemoryUsage = false;
-    
+
     // append current memory usage to list
     void recordMemoryUsage();
 };

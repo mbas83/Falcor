@@ -104,9 +104,6 @@ Texture2D<float4> gDiffuse;
 Texture2D<float4> gSpecular;
 Texture2D<float4> gTexGrad;
 
-// Output
-RWTexture2D<float4> gDebug;
-
 
 float4 psMain(GsOut gsOut) : SV_TARGET0
 {

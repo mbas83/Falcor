@@ -1,5 +1,6 @@
 
+SunTempleCaptureTime = 49
 
-CityCaptureTime = 5
-BistroCaptureTime = 5
-SunTempleCaptureTime = 5
+CityCaptureTime = 60
+
+BistroCaptureTime = 99

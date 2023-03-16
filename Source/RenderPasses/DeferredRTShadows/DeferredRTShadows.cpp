@@ -51,7 +51,7 @@ namespace
     const std::string kSpecular = "specular";
     const std::string kTexGrad = "texGrad";
 
-    const std::string kDebug = "debug";
+    //const std::string kDebug = "debug";
 
     const Falcor::ChannelList kInputChannels =
     {
@@ -91,7 +91,7 @@ RenderPassReflection DeferredRTShadows::reflect(const CompileData& compileData)
     addRenderPassInputs(reflector, kInputChannels);
 
     reflector.addOutput(kOut, "Final color of deferred RT shadow renderer");
-    reflector.addOutput(kDebug, "debug tex").format(ResourceFormat::RGBA32Float);
+    //reflector.addOutput(kDebug, "debug tex").format(ResourceFormat::RGBA32Float);
     return reflector;
 }
 
@@ -103,7 +103,7 @@ void DeferredRTShadows::execute(RenderContext* pRenderContext, const RenderData&
     pRenderContext->clearFbo(mpFbo.get(), clearColor, 1.0f, 0, FboAttachmentType::All);
     mpState->setFbo(mpFbo);
 
-    pRenderContext->clearTexture(renderData[kDebug]->asTexture().get());
+    //pRenderContext->clearTexture(renderData[kDebug]->asTexture().get());
 
     if (!mpScene) return;
 
@@ -115,7 +115,7 @@ void DeferredRTShadows::execute(RenderContext* pRenderContext, const RenderData&
     mpVars["gTexGrad"] = renderData[kTexGrad]->asTexture();
 
     //Output
-    mpVars["gDebug"] = renderData[kDebug]->asTexture();
+    //mpVars["gDebug"] = renderData[kDebug]->asTexture();
     mpVars["PerFrameCB"]["viewportDims"] = float2(mpFbo->getWidth(), mpFbo->getHeight());
 
     {
@@ -128,14 +128,7 @@ void DeferredRTShadows::execute(RenderContext* pRenderContext, const RenderData&
 
         pRenderContext->draw(mpState.get(),mpVars.get(),numLights,0);
     }
-
-    if (mSaveDebug)
-    {
-        auto filename = std::string("D:\\debugTex") + ".pfm";
-        renderData[kDebug]->asTexture()->captureToFile(0, 0, filename, Bitmap::FileFormat::PfmFile, Bitmap::ExportFlags::Uncompressed);
-        mSaveDebug = false;
-    }
-
+    
     {
         FALCOR_PROFILE("drawAmbientLight");
         executeAmbientLightPass(pRenderContext, renderData);

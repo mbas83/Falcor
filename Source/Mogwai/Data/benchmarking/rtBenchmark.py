@@ -2,7 +2,7 @@ from falcor import *
 import json
 
 # use time in seconds for capturing, fps varies between render passes, change for each scene
-captureTime = 2
+captureTime = 60
 
 graph = m.getGraph("PureRTShadows")
 deferredPass = graph.getPass("DeferredRTShadows")
@@ -30,8 +30,8 @@ while m.clock.time < captureTime:
 capturedData = m.profiler.endCapture()
 m.profiler.enabled = False
     
-with open('rtBenchmark.json', 'w') as fp:
-    json.dump(capturedData, fp)    
+with open('RT_Runtime_City.json', 'w') as fp:
+    json.dump(capturedData, fp, indent=2)    
     
 #m.profiler.events["/present/gpuTime"]["value"]
 
