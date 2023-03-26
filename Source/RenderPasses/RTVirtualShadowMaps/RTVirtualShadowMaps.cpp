@@ -25,13 +25,13 @@
  # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
-#include "DeferredRenderer.h"
+#include "RTVirtualShadowMaps.h"
 
 #include "Core/API/BlendState.h"
 #include "VirtualShadowMap/Utils/MipColorData.h"
 #include "VirtualShadowMap/Utils/ShaderDefineUtils.h"
 
-const RenderPass::Info DeferredRenderer::kInfo{ "DeferredRenderer", "Uses G-Buffer for Deferred Rendering." };
+const RenderPass::Info RTVirtualShadowMaps::kInfo{ "RTVirtualShadowMaps", " Raytraced Virtual Shadow Maps, (uses G-Buffer)." };
 
 // Don't remove this. it's required for hot-reload to function properly
 extern "C" FALCOR_API_EXPORT const char* getProjDir()
@@ -42,24 +42,24 @@ extern "C" FALCOR_API_EXPORT const char* getProjDir()
 // pybind to get current memory usage
 static void regDeferredPass(pybind11::module& m)
 {
-    pybind11::class_<DeferredRenderer, RenderPass, DeferredRenderer::SharedPtr> pass(m, "DeferredRenderer");
+    pybind11::class_<RTVirtualShadowMaps, RenderPass, RTVirtualShadowMaps::SharedPtr> pass(m, "RTVirtualShadowMaps");
 
-    pass.def_property_readonly("memoryUsage", &DeferredRenderer::getCurrentMemoryUsage);
-    pass.def("startCaptureMemoryUsage", &DeferredRenderer::startCaptureMemoryUsage);
-    pass.def("endCaptureMemoryUsage", &DeferredRenderer::endCaptureMemoryUsage);
-    pass.def("outputCapturedMemoryUsage", &DeferredRenderer::outputMemoryUsage);
+    pass.def_property_readonly("memoryUsage", &RTVirtualShadowMaps::getCurrentMemoryUsage);
+    pass.def("startCaptureMemoryUsage", &RTVirtualShadowMaps::startCaptureMemoryUsage);
+    pass.def("endCaptureMemoryUsage", &RTVirtualShadowMaps::endCaptureMemoryUsage);
+    pass.def("outputCapturedMemoryUsage", &RTVirtualShadowMaps::outputMemoryUsage);
 }
 
 
 extern "C" FALCOR_API_EXPORT void getPasses(Falcor::RenderPassLibrary & lib)
 {
-    lib.registerPass(DeferredRenderer::kInfo, DeferredRenderer::create);
+    lib.registerPass(RTVirtualShadowMaps::kInfo, RTVirtualShadowMaps::create);
     ScriptBindings::registerBinding(regDeferredPass);
 }
 
 namespace
 {
-    const char kShaderFile[] = "RenderPasses/DeferredRenderer/DeferredRenderer.3d.slang";
+    const char kShaderFile[] = "RenderPasses/RTVirtualShadowMaps/RTVirtualShadowMaps.3d.slang";
     const char kShaderModel[] = "6_5";
 
     const std::string kPosW = "posW";
@@ -89,18 +89,18 @@ namespace
 }
 
 
-DeferredRenderer::SharedPtr DeferredRenderer::create(RenderContext* pRenderContext, const Dictionary& dict)
+RTVirtualShadowMaps::SharedPtr RTVirtualShadowMaps::create(RenderContext* pRenderContext, const Dictionary& dict)
 {
-    SharedPtr pPass = SharedPtr(new DeferredRenderer());
+    SharedPtr pPass = SharedPtr(new RTVirtualShadowMaps());
     return pPass;
 }
 
-Dictionary DeferredRenderer::getScriptingDictionary()
+Dictionary RTVirtualShadowMaps::getScriptingDictionary()
 {
     return Dictionary();
 }
 
-RenderPassReflection DeferredRenderer::reflect(const CompileData& compileData)
+RenderPassReflection RTVirtualShadowMaps::reflect(const CompileData& compileData)
 {
     // Define the required resources here
     RenderPassReflection reflector;
@@ -110,7 +110,7 @@ RenderPassReflection DeferredRenderer::reflect(const CompileData& compileData)
     return reflector;
 }
 
-void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& renderData)
+void RTVirtualShadowMaps::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
     // bind output fbo
     mpFbo->attachColorTarget(renderData[kOut]->asTexture(), 0);
@@ -213,7 +213,7 @@ void DeferredRenderer::execute(RenderContext* pRenderContext, const RenderData& 
 
 }
 
-void DeferredRenderer::renderUI(Gui::Widgets& widget)
+void RTVirtualShadowMaps::renderUI(Gui::Widgets& widget)
 {
 
     if (widget.button("Save Tiled Texture Mip Level"))
@@ -273,7 +273,7 @@ void DeferredRenderer::renderUI(Gui::Widgets& widget)
     widget.var("Slope Bias Mip 5", mipBiasVals[5].y, 0.f, 5.f, 0.001f);
 }
 
-void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
+void RTVirtualShadowMaps::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
 {
     mpScene = pScene;
 
@@ -389,7 +389,7 @@ void DeferredRenderer::setScene(RenderContext* pRenderContext, const Scene::Shar
 
 
 
-DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), numLights(0), numShadowMips(0), numStandardMips(0), mStartIndexFeedback(0), mEndIndexFeedback(0)
+RTVirtualShadowMaps::RTVirtualShadowMaps() : RenderPass(kInfo), numLights(0), numShadowMips(0), numStandardMips(0), mStartIndexFeedback(0), mEndIndexFeedback(0)
 {
     mpState = GraphicsState::create();
 
@@ -417,11 +417,11 @@ DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), numLights(0), numShado
     mpFbo = Fbo::create();
 
     // ambient light pass
-    mpAmbientLightPass = FullScreenPass::create("RenderPasses/DeferredRenderer/AmbientPass/AmbientPass.ps.slang");
+    mpAmbientLightPass = FullScreenPass::create("RenderPasses/RTVirtualShadowMaps/AmbientPass/AmbientPass.ps.slang");
     mpAmbientLightPass->getState()->setBlendState(BlendState::create(blendDesc));
 
     // render SM pass
-    mpRenderShadowTexturePass = FullScreenPass::create("RenderPasses/DeferredRenderer/AmbientPass/RenderSM.ps.slang");
+    mpRenderShadowTexturePass = FullScreenPass::create("RenderPasses/RTVirtualShadowMaps/AmbientPass/RenderSM.ps.slang");
     BlendState::Desc overwriteBlend;
     blendDesc.setIndependentBlend(false);
     blendDesc.setRtBlend(0, true);
@@ -444,7 +444,7 @@ DeferredRenderer::DeferredRenderer() : RenderPass(kInfo), numLights(0), numShado
     mipBiasVals.fill(float4(0.01f));
 }
 
-void DeferredRenderer::preGenerateUAVS()
+void RTVirtualShadowMaps::preGenerateUAVS()
 {
     // shadow map uavs
     mpShadowMapUAVs.resize(mpShadowMapTextures.size());
@@ -469,7 +469,7 @@ void DeferredRenderer::preGenerateUAVS()
     }
 }
 
-void DeferredRenderer::executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData) const
+void RTVirtualShadowMaps::executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData) const
 {
     // iResolution
     float width = (float)mpFbo->getWidth();
@@ -487,7 +487,7 @@ void DeferredRenderer::executeAmbientLightPass(RenderContext* pRenderContext, co
 }
 
 
-void DeferredRenderer::executeDrawShadowMap(RenderContext* pRenderContext, const RenderData& renderData) const
+void RTVirtualShadowMaps::executeDrawShadowMap(RenderContext* pRenderContext, const RenderData& renderData) const
 {
     float width = (float)mpFbo->getWidth();
     float height = (float)mpFbo->getHeight();
@@ -506,7 +506,7 @@ void DeferredRenderer::executeDrawShadowMap(RenderContext* pRenderContext, const
 
 
 
-const float DeferredRenderer::getCurrentMemoryUsage() const
+const float RTVirtualShadowMaps::getCurrentMemoryUsage() const
 {
     const float usedMemoryInMB = static_cast<float>(mpTileUpdateManager->getCurrentlyUsedMemory()) / 1000 / 1000;
     return usedMemoryInMB;
@@ -514,7 +514,7 @@ const float DeferredRenderer::getCurrentMemoryUsage() const
 
 
 
-void DeferredRenderer::outputMemoryUsage()
+void RTVirtualShadowMaps::outputMemoryUsage()
 {
     if (mBenchmarkMemoryOutputFilePath.empty() || mBenchmarkMemoryList.empty()) return;
 
@@ -536,7 +536,7 @@ void DeferredRenderer::outputMemoryUsage()
     file.close();
 }
 
-void DeferredRenderer::endCaptureMemoryUsage()
+void RTVirtualShadowMaps::endCaptureMemoryUsage()
 {
     mRecordMemoryUsage = false;
     FileDialogFilterVec filters;
@@ -551,7 +551,7 @@ void DeferredRenderer::endCaptureMemoryUsage()
 
 
 
-void DeferredRenderer::recordMemoryUsage()
+void RTVirtualShadowMaps::recordMemoryUsage()
 {
     mBenchmarkMemoryList.push_back(getCurrentMemoryUsage());
 }

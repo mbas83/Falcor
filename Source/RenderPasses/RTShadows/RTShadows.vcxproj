@@ -11,11 +11,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{CE566ED6-418E-4E68-A76A-CF022A6AC570}</ProjectGuid>
+    <ProjectGuid>{4E483166-3043-4E8C-B126-4E68F6C84CAA}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>DeferredRTShadows</RootNamespace>
+    <RootNamespace>RTShadows</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
-    <ProjectName>DeferredRTShadows</ProjectName>
+    <ProjectName>RTShadows</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -25,10 +25,10 @@
     <Import Project="..\..\Falcor\Falcor.props" />
   </ImportGroup>
   <ItemGroup>
-    <ClCompile Include="DeferredRTShadows.cpp" />
+    <ClCompile Include="RTShadows.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DeferredRTShadows.h" />
+    <ClInclude Include="RTShadows.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Falcor\Falcor.vcxproj">
@@ -36,7 +36,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ShaderSource Include="DeferredRTShadows.3d.slang" />
+    <ShaderSource Include="RTShadows.3d.slang" />
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>

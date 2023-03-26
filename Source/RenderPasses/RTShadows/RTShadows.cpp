@@ -25,9 +25,9 @@
  # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
-#include "DeferredRTShadows.h"
+#include "RTShadows.h"
 
-const RenderPass::Info DeferredRTShadows::kInfo{ "DeferredRTShadows", "Insert pass description here." };
+const RenderPass::Info RTShadows::kInfo{ "RTShadows", "Purely ray-traced shadows." };
 
 // Don't remove this. it's required for hot-reload to function properly
 extern "C" FALCOR_API_EXPORT const char* getProjDir()
@@ -37,12 +37,12 @@ extern "C" FALCOR_API_EXPORT const char* getProjDir()
 
 extern "C" FALCOR_API_EXPORT void getPasses(Falcor::RenderPassLibrary & lib)
 {
-    lib.registerPass(DeferredRTShadows::kInfo, DeferredRTShadows::create);
+    lib.registerPass(RTShadows::kInfo, RTShadows::create);
 }
 
 namespace
 {
-    const char kShaderFile[] = "RenderPasses/DeferredRTShadows/DeferredRTShadows.3d.slang";
+    const char kShaderFile[] = "RenderPasses/RTShadows/RTShadows.3d.slang";
     const char kShaderModel[] = "6_5";
 
     const std::string kPosW = "posW";
@@ -73,18 +73,18 @@ namespace
 }
 
 
-DeferredRTShadows::SharedPtr DeferredRTShadows::create(RenderContext* pRenderContext, const Dictionary& dict)
+RTShadows::SharedPtr RTShadows::create(RenderContext* pRenderContext, const Dictionary& dict)
 {
-    SharedPtr pPass = SharedPtr(new DeferredRTShadows());
+    SharedPtr pPass = SharedPtr(new RTShadows());
     return pPass;
 }
 
-Dictionary DeferredRTShadows::getScriptingDictionary()
+Dictionary RTShadows::getScriptingDictionary()
 {
     return Dictionary();
 }
 
-RenderPassReflection DeferredRTShadows::reflect(const CompileData& compileData)
+RenderPassReflection RTShadows::reflect(const CompileData& compileData)
 {
     // Define the required resources here
     RenderPassReflection reflector;
@@ -95,7 +95,7 @@ RenderPassReflection DeferredRTShadows::reflect(const CompileData& compileData)
     return reflector;
 }
 
-void DeferredRTShadows::execute(RenderContext* pRenderContext, const RenderData& renderData)
+void RTShadows::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
     // bind output fbo
     mpFbo->attachColorTarget(renderData[kOut]->asTexture(), 0);
@@ -135,7 +135,7 @@ void DeferredRTShadows::execute(RenderContext* pRenderContext, const RenderData&
     }
 }
 
-void DeferredRTShadows::renderUI(Gui::Widgets& widget)
+void RTShadows::renderUI(Gui::Widgets& widget)
 {
     if (widget.button("Save Debug Tex"))
     {
@@ -143,7 +143,7 @@ void DeferredRTShadows::renderUI(Gui::Widgets& widget)
     }
 }
 
-void DeferredRTShadows::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
+void RTShadows::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
 {
     mpScene = pScene;
 
@@ -197,7 +197,7 @@ void DeferredRTShadows::setScene(RenderContext* pRenderContext, const Scene::Sha
 
 }
 
-DeferredRTShadows::DeferredRTShadows() : RenderPass(kInfo)
+RTShadows::RTShadows() : RenderPass(kInfo)
 {
 
     mpState = GraphicsState::create();
@@ -226,11 +226,11 @@ DeferredRTShadows::DeferredRTShadows() : RenderPass(kInfo)
     mpFbo = Fbo::create();
 
     // ambient light pass
-    mpAmbientLightPass = FullScreenPass::create("RenderPasses/DeferredRenderer/AmbientPass/AmbientPass.ps.slang");
+    mpAmbientLightPass = FullScreenPass::create("RenderPasses/RTVirtualShadowMaps/AmbientPass/AmbientPass.ps.slang");
     mpAmbientLightPass->getState()->setBlendState(BlendState::create(blendDesc));
 }
 
-void DeferredRTShadows::executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData)
+void RTShadows::executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData) const
 {
     // iResolution
     float width = (float)mpFbo->getWidth();

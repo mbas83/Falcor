@@ -5,7 +5,7 @@ import Rendering.Lights.LightHelpers;
 
 import Utils.Geometry.GeometryHelpers;
 
-import RenderPasses.DeferredRenderer.ShadingHelper;
+import RenderPasses.RTVirtualShadowMaps.ShadingHelper;
 
 
 cbuffer PerFrameCB

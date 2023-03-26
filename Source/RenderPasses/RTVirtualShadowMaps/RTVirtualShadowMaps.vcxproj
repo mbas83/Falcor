@@ -11,11 +11,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{3DC5DB5E-B405-417B-8D4B-562745B63BEA}</ProjectGuid>
+    <ProjectGuid>{8A3ADB8B-D4BA-4A9F-96A6-0A9BA31EEA17}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>DeferredRenderer</RootNamespace>
+    <RootNamespace>RTVirtualShadowMaps</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
-    <ProjectName>DeferredRenderer</ProjectName>
+    <ProjectName>RTVirtualShadowMaps</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -25,7 +25,7 @@
     <Import Project="..\..\Falcor\Falcor.props" />
   </ImportGroup>
   <ItemGroup>
-    <ClCompile Include="DeferredRenderer.cpp" />
+    <ClCompile Include="RTVirtualShadowMaps.cpp" />
     <ClCompile Include="VirtualShadowMap\TiledResources\FeedbackTexture.cpp" />
     <ClCompile Include="VirtualShadowMap\TiledResources\HeapAllocationManager.cpp" />
     <ClCompile Include="VirtualShadowMap\TiledResources\SamplerFeedbackMap.cpp" />
@@ -33,7 +33,7 @@
     <ClCompile Include="VirtualShadowMap\TiledResources\TileUpdateManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DeferredRenderer.h" />
+    <ClInclude Include="RTVirtualShadowMaps.h" />
     <ClInclude Include="VirtualShadowMap\TiledResources\FeedbackTexture.h" />
     <ClInclude Include="VirtualShadowMap\TiledResources\HeapAllocationManager.h" />
     <ClInclude Include="VirtualShadowMap\TiledResources\SamplerFeedbackMap.h" />
@@ -51,8 +51,8 @@
   <ItemGroup>
     <ShaderSource Include="AmbientPass\AmbientPass.ps.slang" />
     <ShaderSource Include="AmbientPass\RenderSM.ps.slang" />
-    <ShaderSource Include="DeferredRenderer.3d.slang" />
     <ShaderSource Include="LodHelper.slang" />
+    <ShaderSource Include="RTVirtualShadowMaps.3d.slang" />
     <ShaderSource Include="ShadingHelper.slang" />
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">

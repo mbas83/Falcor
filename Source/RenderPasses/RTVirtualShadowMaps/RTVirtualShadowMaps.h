@@ -28,12 +28,16 @@
 #pragma once
 #include "Falcor.h"
 
+#include "VirtualShadowMap/TiledResources/TiledTexture.h"
+#include "VirtualShadowMap/TiledResources/FeedbackTexture.h"
+#include "VirtualShadowMap/TiledResources/TileUpdateManager.h"
+
 using namespace Falcor;
 
-class DeferredRTShadows : public RenderPass
+class RTVirtualShadowMaps : public RenderPass
 {
 public:
-    using SharedPtr = std::shared_ptr<DeferredRTShadows>;
+    using SharedPtr = std::shared_ptr<RTVirtualShadowMaps>;
 
     static const Info kInfo;
 
@@ -53,8 +57,15 @@ public:
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
     virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override { return false; }
 
+    const float getCurrentMemoryUsage() const;
+
+    // use in python script 
+    void startCaptureMemoryUsage() { mBenchmarkMemoryList.reserve(10000);  mRecordMemoryUsage = true; };
+    void endCaptureMemoryUsage();
+    void outputMemoryUsage();
+
 private:
-    DeferredRTShadows();
+    RTVirtualShadowMaps();
 
     GraphicsState::SharedPtr mpState;
     DepthStencilState::SharedPtr mpDsNoDepthWrite;
@@ -66,12 +77,66 @@ private:
     Vao::SharedPtr mpLightsVao;
     Buffer::SharedPtr mpDrawBuffer;
 
+
+    // VSM
+    // reserved shadow map textures
+    std::vector<TiledTexture::SharedPtr> mpShadowMapTextures;
+
+    // feedback textures for shadow maps
+    std::vector<FeedbackTexture::SharedPtr> mpFeedbackTextures;
+
+    // manage tile updates
+    TileUpdateManager::SharedPtr mpTileUpdateManager;
+
+    // color for mip levels
+    Texture::SharedPtr mipColorTex;
+
+    // for writing texture to file
+    int lightIndexToWrite = 0;
+    int mipLevelToWrite = 0;
+
+    uint numLights;
+    uint numShadowMips;
+    uint numStandardMips;
+
     bool mSaveDebug = false;
-    uint numLights = 0;
 
-    // ambient light pass
+    // name of texture in shader for binding
+    std::vector<std::vector<UnorderedAccessView::SharedPtr>> mpShadowMapUAVs;
+    std::vector<std::vector<UnorderedAccessView::SharedPtr>> mpFeedbackMapUAVs;
+
+    // generate all needed uavs beforehand
+    void preGenerateUAVS();
+
+
+    // abmient light pass
     FullScreenPass::SharedPtr mpAmbientLightPass;
+    FullScreenPass::SharedPtr mpRenderShadowTexturePass;
 
-    void executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData);
+    void executeAmbientLightPass(RenderContext* pRenderContext, const RenderData& renderData) const;
+    void executeDrawShadowMap(RenderContext* pRenderContext, const RenderData& renderData) const;
 
+    uint mRenderSMIndex = 0, mRenderMipLevel = 0;
+    bool mRenderShadowMap = false;
+    Sampler::SharedPtr mpRenderSMSampler;
+
+    uint mFrameCount = 0;
+
+    std::array<float4, 6> mipBiasVals;
+    // only process x textures for feedback
+    UINT mStartIndexFeedback, mEndIndexFeedback;
+    UINT mNumFeedbackReadsPerFrame = 10;
+
+    // Benchmarking
+
+    std::vector<float> mBenchmarkMemoryList;
+
+    std::string mBenchmarkMemoryOutputFilePath;
+
+
+    bool mRecordMemoryUsage = false;
+
+    // append current memory usage to list
+    void recordMemoryUsage();
 };
+

@@ -1,4 +1,4 @@
-import RenderPasses.DeferredRenderer.ShadingHelper;
+import RenderPasses.RTVirtualShadowMaps.ShadingHelper;
 
 // GBuffer
 Texture2D<float4> gWorldPos;

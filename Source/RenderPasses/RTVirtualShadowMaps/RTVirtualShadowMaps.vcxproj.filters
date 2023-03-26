@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="DeferredRenderer.cpp" />
+    <ClCompile Include="RTVirtualShadowMaps.cpp" />
     <ClCompile Include="VirtualShadowMap\TiledResources\FeedbackTexture.cpp">
       <Filter>VirtualShadowMap\TiledResources</Filter>
     </ClCompile>
@@ -19,16 +19,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DeferredRenderer.h" />
-    <ClInclude Include="VirtualShadowMap\Utils\d3dx12.h">
-      <Filter>VirtualShadowMap\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="VirtualShadowMap\Utils\MipColorData.h">
-      <Filter>VirtualShadowMap\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="VirtualShadowMap\Utils\ShaderDefineUtils.h">
-      <Filter>VirtualShadowMap\Utils</Filter>
-    </ClInclude>
+    <ClInclude Include="RTVirtualShadowMaps.h" />
     <ClInclude Include="VirtualShadowMap\TiledResources\FeedbackTexture.h">
       <Filter>VirtualShadowMap\TiledResources</Filter>
     </ClInclude>
@@ -44,11 +35,20 @@
     <ClInclude Include="VirtualShadowMap\TiledResources\TileUpdateManager.h">
       <Filter>VirtualShadowMap\TiledResources</Filter>
     </ClInclude>
+    <ClInclude Include="VirtualShadowMap\Utils\d3dx12.h">
+      <Filter>VirtualShadowMap\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="VirtualShadowMap\Utils\MipColorData.h">
+      <Filter>VirtualShadowMap\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="VirtualShadowMap\Utils\ShaderDefineUtils.h">
+      <Filter>VirtualShadowMap\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ShaderSource Include="DeferredRenderer.3d.slang" />
-    <ShaderSource Include="ShadingHelper.slang" />
     <ShaderSource Include="LodHelper.slang" />
+    <ShaderSource Include="RTVirtualShadowMaps.3d.slang" />
+    <ShaderSource Include="ShadingHelper.slang" />
     <ShaderSource Include="AmbientPass\AmbientPass.ps.slang">
       <Filter>AmbientPass</Filter>
     </ShaderSource>
@@ -57,17 +57,17 @@
     </ShaderSource>
   </ItemGroup>
   <ItemGroup>
+    <Filter Include="AmbientPass">
+      <UniqueIdentifier>{3c0694f9-7b2a-449e-a376-c97765705352}</UniqueIdentifier>
+    </Filter>
     <Filter Include="VirtualShadowMap">
-      <UniqueIdentifier>{75f35386-1018-4e45-9bbc-da61cd40f1d1}</UniqueIdentifier>
+      <UniqueIdentifier>{925fa3ad-cd1c-4e5f-8c8f-cc5c8f9efa1c}</UniqueIdentifier>
     </Filter>
     <Filter Include="VirtualShadowMap\TiledResources">
-      <UniqueIdentifier>{eee11e8b-37cf-4d57-8779-76313e2a8867}</UniqueIdentifier>
+      <UniqueIdentifier>{ce31e052-735b-40a8-97b9-fdcbdc34fe11}</UniqueIdentifier>
     </Filter>
     <Filter Include="VirtualShadowMap\Utils">
-      <UniqueIdentifier>{a81bc1dc-8918-4b8b-98c5-c8f1c5c4c9cc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="AmbientPass">
-      <UniqueIdentifier>{407636d5-36e1-4c07-85e2-43aad266c65d}</UniqueIdentifier>
+      <UniqueIdentifier>{b8b5615f-e9e7-493a-b015-9c3c171b50de}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
